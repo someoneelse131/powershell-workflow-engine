@@ -1,0 +1,34 @@
+# PowerShell
+*.ps1xml
+*.psd1~
+*.psm1~
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+
+# Package files
+*.zip
+*.nupkg
+
+# Test results
+TestResults/
+*.trx
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
