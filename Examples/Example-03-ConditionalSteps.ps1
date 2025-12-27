@@ -5,16 +5,26 @@
 .DESCRIPTION
     Sometimes you only want to run a step under certain conditions.
     Conditional steps check a condition before executing.
-    
+
     This example shows how to:
     - Create conditional steps
     - Use context values in conditions
     - Build branching logic in workflows
 
+.PARAMETER Manual
+    Run in interactive mode - choose which steps to execute
+
 .NOTES
     Run this script from PowerShell:
     .\Example-03-ConditionalSteps.ps1
+
+    For interactive mode:
+    .\Example-03-ConditionalSteps.ps1 -Manual
 #>
+
+param(
+    [switch]$Manual
+)
 
 . "$PSScriptRoot\..\WorkflowEngine.ps1"
 
@@ -175,8 +185,12 @@ $workflow.AddStep("Send Notification", {
 })
 
 # Execute
-$workflow.Execute()
-$workflow.PrintSummary()
+if ($Manual) {
+    $workflow.ExecuteInteractive()
+} else {
+    $workflow.Execute()
+    $workflow.PrintSummary()
+}
 
 Write-Host ""
 Write-Host ("=" * 60) -ForegroundColor Yellow

@@ -697,6 +697,481 @@ class WfeWorkflow {
         
         Write-Host ""
     }
+
+    # ============================================================================
+    # INTERACTIVE MODE METHODS
+    # ============================================================================
+
+    hidden [string] ExtractStepDescription([WorkflowStep]$step) {
+        # For now, return empty string
+        # Future enhancement: Parse scriptblock comments or add Description property
+        return ""
+    }
+
+    hidden [array] BuildStepList() {
+        $stepList = @()
+
+        foreach ($item in $this.Steps) {
+            if ($item.GetType().Name -eq 'ParallelGroup') {
+                # Add parallel group steps
+                foreach ($parallelStep in $item.Steps) {
+                    $stepList += @{
+                        OriginalStep = $parallelStep
+                        ParallelGroup = $item
+                        Name = $parallelStep.Name
+                        Status = $parallelStep.Status
+                        IsParallel = $true
+                        Description = $this.ExtractStepDescription($parallelStep)
+                    }
+                }
+            } else {
+                # Regular sequential step
+                $stepList += @{
+                    OriginalStep = $item
+                    ParallelGroup = $null
+                    Name = $item.Name
+                    Status = $item.Status
+                    IsParallel = $false
+                    Description = $this.ExtractStepDescription($item)
+                }
+            }
+        }
+
+        return $stepList
+    }
+
+    hidden [hashtable] ParseStepSelection([string]$input, [array]$stepList) {
+        $input = $input.Trim().ToLower()
+
+        # Check for exit
+        if ($input -in @("exit", "quit", "q")) {
+            return @{ Action = "Exit" }
+        }
+
+        # Check for "all"
+        if ($input -eq "all") {
+            $selectedIndices = 1..$stepList.Count
+            return @{
+                Action = "Execute"
+                SelectedIndices = $selectedIndices
+                StepList = $stepList
+            }
+        }
+
+        # Parse "from X"
+        if ($input -match "^from\s+(\d+)$") {
+            $start = [int]$matches[1]
+            $selectedIndices = $start..$stepList.Count
+            return @{
+                Action = "Execute"
+                SelectedIndices = $selectedIndices
+                StepList = $stepList
+            }
+        }
+
+        # Parse "to X"
+        if ($input -match "^to\s+(\d+)$") {
+            $end = [int]$matches[1]
+            $selectedIndices = 1..$end
+            return @{
+                Action = "Execute"
+                SelectedIndices = $selectedIndices
+                StepList = $stepList
+            }
+        }
+
+        # Parse ranges and individual numbers (e.g., "1,3,5-7,9")
+        $selectedIndices = @()
+        $parts = $input -split ','
+        foreach ($part in $parts) {
+            $part = $part.Trim()
+            if ($part -match '^(\d+)-(\d+)$') {
+                # Range
+                $start = [int]$matches[1]
+                $end = [int]$matches[2]
+                $selectedIndices += $start..$end
+            } elseif ($part -match '^\d+$') {
+                # Single number
+                $selectedIndices += [int]$part
+            }
+        }
+
+        # Validate indices
+        $selectedIndices = $selectedIndices | Where-Object { $_ -ge 1 -and $_ -le $stepList.Count } | Sort-Object -Unique
+
+        return @{
+            Action = "Execute"
+            SelectedIndices = $selectedIndices
+            StepList = $stepList
+        }
+    }
+
+    hidden [hashtable] ShowInteractiveMenu() {
+        Clear-Host
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "  WORKFLOW INTERACTIVE MODE" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+
+        # Build flat list of all steps with indices
+        $stepList = $this.BuildStepList()
+
+        # Display steps
+        $index = 1
+        foreach ($item in $stepList) {
+            $status = $item.Status
+            $color = switch ($status) {
+                "Completed" { "Green" }
+                "Failed" { "Red" }
+                "Skipped" { "Yellow" }
+                "Running" { "Cyan" }
+                default { "White" }
+            }
+
+            $prefix = "[$index]"
+            $type = if ($item.IsParallel) { "[PARALLEL]" } else { "[SEQUENTIAL]" }
+            $statusText = "[$status]"
+
+            Write-Host "$prefix $type " -NoNewline
+            Write-Host $item.Name -ForegroundColor $color -NoNewline
+            Write-Host " $statusText" -ForegroundColor $color
+
+            # Show description if available
+            if ($item.Description) {
+                Write-Host "      $($item.Description)" -ForegroundColor Gray
+            }
+
+            $index++
+        }
+
+        Write-Host ""
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "COMMANDS:" -ForegroundColor Yellow
+        Write-Host "  - Enter step numbers (e.g., 1,3,5)" -ForegroundColor Gray
+        Write-Host "  - Enter range (e.g., 2-6)" -ForegroundColor Gray
+        Write-Host "  - From step to end (e.g., from 3)" -ForegroundColor Gray
+        Write-Host "  - Up to step (e.g., to 5)" -ForegroundColor Gray
+        Write-Host "  - All steps (e.g., all)" -ForegroundColor Gray
+        Write-Host "  - Exit (e.g., exit or quit)" -ForegroundColor Gray
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host ""
+
+        $userInput = Read-Host "Select steps to execute"
+
+        return $this.ParseStepSelection($userInput, $stepList)
+    }
+
+    hidden [void] ExecuteParallelGroupFiltered([ParallelGroup]$group, [array]$selectedSteps, [hashtable]$completedSteps) {
+        Write-Host ("=" * 50) -ForegroundColor Magenta
+        Write-Host "Parallel Group: $($group.Name)" -ForegroundColor Magenta
+        Write-Host ("=" * 50) -ForegroundColor Magenta
+
+        if ($selectedSteps.Count -eq 0) {
+            Write-Host "No steps to execute in this group" -ForegroundColor Yellow
+            Write-Host ("=" * 50) -ForegroundColor Magenta
+            Write-Host ""
+            return
+        }
+
+        # Use runspace pool for true parallel execution
+        $runspacePool = [runspacefactory]::CreateRunspacePool(1, [Math]::Max($group.MaxParallelism, $selectedSteps.Count))
+        $runspacePool.Open()
+
+        $runspaces = @{}
+
+        # Start all runspaces
+        foreach ($step in $selectedSteps) {
+            Write-Host "[START] '$($step.Name)'" -ForegroundColor Cyan
+            $step.Status = [StepStatus]::Running
+            $step.StartTime = Get-Date
+
+            $contextSnapshot = $this.Context.GetSnapshot()
+            $stepAction = $step.Action
+            $retries = $step.Retries
+            $retryDelay = $step.RetryDelay
+
+            $powershell = [powershell]::Create()
+            $powershell.RunspacePool = $runspacePool
+
+            [void]$powershell.AddScript({
+                param($actionString, $contextVars, $retries, $retryDelay)
+
+                # Recreate the scriptblock from string
+                $stepAction = [scriptblock]::Create($actionString)
+
+                # Create simple context object
+                $ctx = New-Object PSObject -Property @{ Variables = $contextVars }
+
+                Add-Member -InputObject $ctx -MemberType ScriptMethod -Name Set -Value {
+                    param($key, $value)
+                    $this.Variables[$key] = $value
+                } -Force
+
+                Add-Member -InputObject $ctx -MemberType ScriptMethod -Name Get -Value {
+                    param($key)
+                    if ($this.Variables.ContainsKey($key)) {
+                        return $this.Variables[$key]
+                    }
+                    return $null
+                } -Force
+
+                Add-Member -InputObject $ctx -MemberType ScriptMethod -Name SetValue -Value {
+                    param($key, $value)
+                    $this.Variables[$key] = $value
+                } -Force
+
+                Add-Member -InputObject $ctx -MemberType ScriptMethod -Name GetValue -Value {
+                    param($key)
+                    if ($this.Variables.ContainsKey($key)) {
+                        return $this.Variables[$key]
+                    }
+                    return $null
+                } -Force
+
+                # Execute with retries
+                for ($i = 1; $i -le $retries; $i++) {
+                    try {
+                        $result = & $stepAction $ctx
+
+                        return @{
+                            Success = $true
+                            Result = $result
+                            UpdatedContext = $ctx.Variables
+                            Error = $null
+                        }
+
+                    } catch {
+                        if ($i -lt $retries) {
+                            Start-Sleep -Seconds $retryDelay
+                        } else {
+                            return @{
+                                Success = $false
+                                Result = $null
+                                UpdatedContext = $ctx.Variables
+                                Error = $_.Exception.Message
+                            }
+                        }
+                    }
+                }
+            })
+
+            [void]$powershell.AddArgument($stepAction.ToString())
+            [void]$powershell.AddArgument($contextSnapshot)
+            [void]$powershell.AddArgument($retries)
+            [void]$powershell.AddArgument($retryDelay)
+
+            $handle = $powershell.BeginInvoke()
+
+            $runspaces[$step.Id] = @{
+                PowerShell = $powershell
+                Handle = $handle
+                Step = $step
+            }
+        }
+
+        if ($runspaces.Count -gt 0) {
+            Write-Host "Waiting for $($runspaces.Count) parallel tasks..." -ForegroundColor Cyan
+
+            # Wait for all runspaces to complete
+            $failedStep = $null
+
+            foreach ($stepId in $runspaces.Keys) {
+                $runspaceInfo = $runspaces[$stepId]
+                $step = $runspaceInfo.Step
+                $powershell = $runspaceInfo.PowerShell
+                $handle = $runspaceInfo.Handle
+
+                try {
+                    # Wait for this runspace to complete
+                    $result = $powershell.EndInvoke($handle)
+
+                    $step.EndTime = Get-Date
+                    $duration = $step.GetDurationSeconds()
+                    $durationText = $duration.ToString('F2') + "s"
+
+                    # Check for errors in the stream
+                    if ($powershell.Streams.Error.Count -gt 0) {
+                        $errorMsg = $powershell.Streams.Error[0].ToString()
+                        Write-Host "[FAIL] '$($step.Name)' stream error: $errorMsg" -ForegroundColor Red
+                        $step.Status = [StepStatus]::Failed
+                        $step.ErrorMessage = $errorMsg
+
+                        if (-not $this.ContinueOnError -and $null -eq $failedStep) {
+                            $failedStep = $step
+                        }
+                    }
+                    elseif ($null -ne $result -and $result.Count -gt 0 -and $result[0].Success) {
+                        Write-Host "[OK] '$($step.Name)' ($durationText)" -ForegroundColor Green
+                        $step.Status = [StepStatus]::Completed
+                        $step.Result = $result[0].Result
+                        $completedSteps[$step.Id] = $step
+                        $this.Context.MergeUpdates($result[0].UpdatedContext)
+                    } else {
+                        $errorMsg = if ($null -ne $result -and $result.Count -gt 0) { $result[0].Error } else { "Unknown error" }
+                        Write-Host "[FAIL] '$($step.Name)' failed: $errorMsg" -ForegroundColor Red
+                        $step.Status = [StepStatus]::Failed
+                        $step.ErrorMessage = $errorMsg
+
+                        if (-not $this.ContinueOnError -and $null -eq $failedStep) {
+                            $failedStep = $step
+                        }
+                    }
+                } catch {
+                    $step.EndTime = Get-Date
+                    Write-Host "[FAIL] '$($step.Name)' exception: $_" -ForegroundColor Red
+                    $step.Status = [StepStatus]::Failed
+                    $step.ErrorMessage = $_.ToString()
+
+                    if (-not $this.ContinueOnError -and $null -eq $failedStep) {
+                        $failedStep = $step
+                    }
+                } finally {
+                    $powershell.Dispose()
+                }
+            }
+
+            # Clean up runspace pool
+            $runspacePool.Close()
+            $runspacePool.Dispose()
+
+            # If we had a failure and ContinueOnError is false, throw now
+            if ($null -ne $failedStep) {
+                throw "Parallel step '$($failedStep.Name)' failed: $($failedStep.ErrorMessage)"
+            }
+        }
+
+        Write-Host ("=" * 50) -ForegroundColor Magenta
+        Write-Host ""
+    }
+
+    hidden [void] ExecuteSelectedSteps([hashtable]$selection) {
+        $selectedIndices = $selection.SelectedIndices
+        $stepList = $selection.StepList
+
+        if ($selectedIndices.Count -eq 0) {
+            Write-Host "No valid steps selected." -ForegroundColor Yellow
+            return
+        }
+
+        # Build list of selected steps
+        $selectedSteps = @()
+        foreach ($index in $selectedIndices) {
+            $selectedSteps += $stepList[$index - 1]
+        }
+
+        # Group by parallel groups to handle partial selections
+        $parallelGroupSelections = @{}
+        $sequentialSteps = @()
+
+        foreach ($stepInfo in $selectedSteps) {
+            if ($stepInfo.IsParallel) {
+                $groupId = $stepInfo.ParallelGroup.Id
+                if (-not $parallelGroupSelections.ContainsKey($groupId)) {
+                    $parallelGroupSelections[$groupId] = @{
+                        Group = $stepInfo.ParallelGroup
+                        SelectedSteps = @()
+                    }
+                }
+                $parallelGroupSelections[$groupId].SelectedSteps += $stepInfo.OriginalStep
+            } else {
+                $sequentialSteps += $stepInfo.OriginalStep
+            }
+        }
+
+        # Completed steps tracker
+        $completedSteps = @{}
+
+        # Execute steps in original order
+        foreach ($item in $this.Steps) {
+            if ($item.GetType().Name -eq 'ParallelGroup') {
+                $groupId = $item.Id
+                if ($parallelGroupSelections.ContainsKey($groupId)) {
+                    $stepsToRun = $parallelGroupSelections[$groupId].SelectedSteps
+
+                    # If not all parallel steps selected, inform user
+                    if ($stepsToRun.Count -lt $item.Steps.Count) {
+                        Write-Host ""
+                        Write-Host "Parallel Group: $($item.Name)" -ForegroundColor Yellow
+                        Write-Host "  Selected $($stepsToRun.Count) of $($item.Steps.Count) parallel steps" -ForegroundColor Gray
+                        Write-Host "  Selected steps will run in parallel" -ForegroundColor Gray
+                        Write-Host ""
+                    }
+
+                    # Execute selected parallel steps
+                    try {
+                        $this.ExecuteParallelGroupFiltered($item, $stepsToRun, $completedSteps)
+                    } catch {
+                        if (-not $this.ContinueOnError) {
+                            throw
+                        }
+                    }
+                }
+            } else {
+                # Sequential step
+                if ($item -in $sequentialSteps) {
+                    try {
+                        $this.ExecuteSequentialStep($item)
+                        if ($item.Status -eq [StepStatus]::Completed) {
+                            $completedSteps[$item.Id] = $item
+                        }
+                    } catch {
+                        if (-not $this.ContinueOnError) {
+                            throw
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [bool] ExecuteInteractive() {
+        $this.StartTime = Get-Date
+
+        while ($true) {
+            # Display menu with all steps
+            $selection = $this.ShowInteractiveMenu()
+
+            # Check if user wants to exit
+            if ($selection.Action -eq "Exit") {
+                Write-Host ""
+                Write-Host "Exiting interactive mode..." -ForegroundColor Yellow
+                Write-Host ""
+                break
+            }
+
+            # Execute selected steps
+            try {
+                Write-Host ""
+                Write-Host "========================================" -ForegroundColor Cyan
+                Write-Host "Executing selected steps..." -ForegroundColor Cyan
+                Write-Host "========================================" -ForegroundColor Cyan
+                Write-Host ""
+
+                $this.ExecuteSelectedSteps($selection)
+
+                Write-Host ""
+                Write-Host "========================================" -ForegroundColor Green
+                Write-Host "Execution completed" -ForegroundColor Green
+                Write-Host "========================================" -ForegroundColor Green
+
+            } catch {
+                Write-Host ""
+                Write-Host "========================================" -ForegroundColor Red
+                Write-Host "Execution failed: $_" -ForegroundColor Red
+                Write-Host "========================================" -ForegroundColor Red
+            }
+
+            # Show summary after execution
+            $this.PrintSummary()
+
+            Write-Host ""
+            Write-Host "Press any key to return to menu..." -ForegroundColor Cyan
+            $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        }
+
+        $this.EndTime = Get-Date
+        return $true
+    }
 }
 
 #endregion

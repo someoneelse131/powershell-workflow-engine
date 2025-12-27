@@ -5,17 +5,27 @@
 .DESCRIPTION
     When steps don't depend on each other, you can run them in parallel
     to save time. This example shows how to create parallel groups.
-    
+
     This example shows how to:
     - Create parallel groups
     - Add steps to parallel groups
     - Control maximum parallelism
     - Understand context behavior in parallel steps
 
+.PARAMETER Manual
+    Run in interactive mode - choose which steps to execute
+
 .NOTES
     Run this script from PowerShell:
     .\Example-04-ParallelExecution.ps1
+
+    For interactive mode:
+    .\Example-04-ParallelExecution.ps1 -Manual
 #>
+
+param(
+    [switch]$Manual
+)
 
 . "$PSScriptRoot\..\WorkflowEngine.ps1"
 
@@ -145,16 +155,24 @@ $workflow.AddStep("Run Integration Tests", {
 # ----------------------------------------------------------------------------
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
-$workflow.Execute()
+if ($Manual) {
+    # Interactive mode - user selects which steps to run
+    $workflow.ExecuteInteractive()
+} else {
+    # Automatic mode - run all steps
+    $workflow.Execute()
+}
 
 $stopwatch.Stop()
 
-$workflow.PrintSummary()
+if (-not $Manual) {
+    $workflow.PrintSummary()
 
-Write-Host ""
-Write-Host "=" * 60 -ForegroundColor Green
-Write-Host "  TIMING ANALYSIS" -ForegroundColor Green
-Write-Host "=" * 60 -ForegroundColor Green
+    Write-Host ""
+    Write-Host "=" * 60 -ForegroundColor Green
+    Write-Host "  TIMING ANALYSIS" -ForegroundColor Green
+    Write-Host "=" * 60 -ForegroundColor Green
+}
 Write-Host ""
 Write-Host "  If all steps ran sequentially:"
 Write-Host "    4 builds x 2s + 3 downloads x 1s + 1s tests = 12 seconds"

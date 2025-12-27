@@ -11,10 +11,20 @@
     - Execute the workflow
     - View the summary
 
+.PARAMETER Manual
+    Run in interactive mode - choose which steps to execute
+
 .NOTES
     Run this script from PowerShell:
     .\Example-01-BasicWorkflow.ps1
+
+    For interactive mode:
+    .\Example-01-BasicWorkflow.ps1 -Manual
 #>
+
+param(
+    [switch]$Manual
+)
 
 # ============================================================================
 # STEP 1: Load the Workflow Engine
@@ -90,27 +100,35 @@ $workflow.AddStep("Step 3: Finalize", {
 # ============================================================================
 # Execute() runs all steps in order
 # It returns $true if successful, $false if any step failed
+#
+# With -Manual parameter, ExecuteInteractive() provides an interactive menu
 
 Write-Host "Starting workflow execution..." -ForegroundColor Yellow
 Write-Host ""
 
-$success = $workflow.Execute()
-
-# ============================================================================
-# STEP 5: Print the Summary
-# ============================================================================
-# PrintSummary() shows a nice overview of what happened
-
-$workflow.PrintSummary()
-
-# ============================================================================
-# STEP 6: Check the Result
-# ============================================================================
-
-if ($success) {
-    Write-Host "Workflow completed successfully!" -ForegroundColor Green
+if ($Manual) {
+    # Interactive mode - user selects which steps to run
+    $workflow.ExecuteInteractive()
 } else {
-    Write-Host "Workflow failed!" -ForegroundColor Red
+    # Automatic mode - run all steps
+    $success = $workflow.Execute()
+
+    # ============================================================================
+    # STEP 5: Print the Summary
+    # ============================================================================
+    # PrintSummary() shows a nice overview of what happened
+
+    $workflow.PrintSummary()
+
+    # ============================================================================
+    # STEP 6: Check the Result
+    # ============================================================================
+
+    if ($success) {
+        Write-Host "Workflow completed successfully!" -ForegroundColor Green
+    } else {
+        Write-Host "Workflow failed!" -ForegroundColor Red
+    }
 }
 
 <#

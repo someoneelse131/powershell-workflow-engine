@@ -5,16 +5,26 @@
 .DESCRIPTION
     Steps run independently, but often you need to pass data from one step
     to another. The "context" ($ctx) is a shared data store for this purpose.
-    
+
     This example shows how to:
     - Store data in the context
     - Retrieve data from the context
     - Pass complex objects between steps
 
+.PARAMETER Manual
+    Run in interactive mode - choose which steps to execute
+
 .NOTES
     Run this script from PowerShell:
     .\Example-02-ContextSharing.ps1
+
+    For interactive mode:
+    .\Example-02-ContextSharing.ps1 -Manual
 #>
+
+param(
+    [switch]$Manual
+)
 
 . "$PSScriptRoot\..\WorkflowEngine.ps1"
 
@@ -146,8 +156,12 @@ $workflow.AddStep("Generate Report", {
 })
 
 # Execute the workflow
-$workflow.Execute()
-$workflow.PrintSummary()
+if ($Manual) {
+    $workflow.ExecuteInteractive()
+} else {
+    $workflow.Execute()
+    $workflow.PrintSummary()
+}
 
 <#
 WHAT YOU LEARNED:

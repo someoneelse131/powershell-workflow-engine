@@ -6,13 +6,23 @@
     This example demonstrates a complete, realistic deployment workflow
     that combines all the concepts: sequential steps, parallel groups,
     conditional steps, context sharing, and error handling.
-    
+
     Scenario: Deploy a web application to different environments
+
+.PARAMETER Manual
+    Run in interactive mode - choose which steps to execute
 
 .NOTES
     Run this script from PowerShell:
     .\Example-06-RealWorld-Deployment.ps1
+
+    For interactive mode:
+    .\Example-06-RealWorld-Deployment.ps1 -Manual
 #>
+
+param(
+    [switch]$Manual
+)
 
 . "$PSScriptRoot\..\WorkflowEngine.ps1"
 
@@ -335,8 +345,14 @@ $workflow.AddConditionalStep(
 # EXECUTE
 # ============================================================================
 
-$success = $workflow.Execute()
-$workflow.PrintSummary()
+if ($Manual) {
+    # Interactive mode - user selects which steps to run
+    $workflow.ExecuteInteractive()
+} else {
+    # Automatic mode - run all steps
+    $success = $workflow.Execute()
+    $workflow.PrintSummary()
+}
 
 # Final status
 Write-Host ""
