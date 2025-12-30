@@ -40,6 +40,11 @@ A powerful, production-ready workflow execution engine for PowerShell that enabl
 
 ### Option 1: Import Module Directly
 
+Folder Workflowengine is the Module. Copy folder into a powrshell module folder
+default C:\Program Files\WindowsPowerShell\Modules
+or C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+
+
 Import the module directly from its location:
 
 ```powershell
@@ -52,7 +57,7 @@ Copy the module to a system modules directory for global access (run as Administ
 
 ```powershell
 $modulePath = "$env:ProgramFiles\WindowsPowerShell\Modules\WorkflowEngine"
-Copy-Item -Path "C:\path\to\wfe\WorkflowEngine" -Destination $modulePath -Recurse -Force
+Copy-Item -Path "C:\path\to\WorkflowEngine" -Destination $modulePath -Recurse -Force
 
 # Now you can import from anywhere
 Import-Module WorkflowEngine
