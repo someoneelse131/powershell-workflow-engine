@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(pwsh -NoProfile -Command \"Get-Command -Syntax ./WorkflowEngine.ps1\")",
-      "Bash(pwsh:*)"
-    ]
-  }
-}
