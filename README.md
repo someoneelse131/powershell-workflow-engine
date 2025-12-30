@@ -870,10 +870,7 @@ The project includes comprehensive unit tests. Run them with:
 
 ```powershell
 # Run all tests
-Pester .\WorkflowEngine.Tests.ps1
-
-# Run specific test
-Pester .\WorkflowEngine.Tests.ps1 -TestName "Basic Workflow Execution"
+.\WorkflowEngine.Tests.ps1
 ```
 
 ### Test Coverage
