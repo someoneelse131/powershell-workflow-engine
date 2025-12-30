@@ -95,7 +95,7 @@ $workflow.AddStep("Step 2: Load Configuration", {
 
 $buildGroup = $workflow.AddParallelGroup("Parallel Build Group")
 
-$buildGroup.AddStep([WorkflowStep]::new("Step 3: Build Backend API", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Step 3: Build Backend API" -Action {
     param($ctx)
     Write-Host "  [API] Compiling backend services..."
     Start-Sleep -Milliseconds 800
@@ -103,7 +103,7 @@ $buildGroup.AddStep([WorkflowStep]::new("Step 3: Build Backend API", {
     Write-Host "  [API] Backend build complete!"
 }))
 
-$buildGroup.AddStep([WorkflowStep]::new("Step 4: Build Frontend App", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Step 4: Build Frontend App" -Action {
     param($ctx)
     Write-Host "  [WEB] Bundling frontend assets..."
     Start-Sleep -Milliseconds 600
@@ -111,7 +111,7 @@ $buildGroup.AddStep([WorkflowStep]::new("Step 4: Build Frontend App", {
     Write-Host "  [WEB] Frontend build complete!"
 }))
 
-$buildGroup.AddStep([WorkflowStep]::new("Step 5: Build Worker Service", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Step 5: Build Worker Service" -Action {
     param($ctx)
     Write-Host "  [WORKER] Compiling background jobs..."
     Start-Sleep -Milliseconds 500
@@ -146,7 +146,7 @@ $workflow.AddStep("Step 6: Validate Build Artifacts", {
 
 $testGroup = $workflow.AddParallelGroup("Parallel Test Group")
 
-$testGroup.AddStep([WorkflowStep]::new("Step 7: Run Unit Tests", {
+$testGroup.AddStep((New-WorkflowStep -Name "Step 7: Run Unit Tests" -Action {
     param($ctx)
     Write-Host "  [UNIT] Running 156 unit tests..."
     Start-Sleep -Milliseconds 700
@@ -154,7 +154,7 @@ $testGroup.AddStep([WorkflowStep]::new("Step 7: Run Unit Tests", {
     Write-Host "  [UNIT] All unit tests passed!"
 }))
 
-$testGroup.AddStep([WorkflowStep]::new("Step 8: Run Integration Tests", {
+$testGroup.AddStep((New-WorkflowStep -Name "Step 8: Run Integration Tests" -Action {
     param($ctx)
     Write-Host "  [INTEGRATION] Running 42 integration tests..."
     Start-Sleep -Milliseconds 900
