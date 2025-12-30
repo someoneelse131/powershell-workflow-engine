@@ -1,17 +1,23 @@
 # PowerShell Workflow Engine (WFE)
 
+[![PowerShell Gallery Version](https://img.shields.io/powershellgallery/v/WorkflowEngine)](https://www.powershellgallery.com/packages/WorkflowEngine)
+[![PowerShell Gallery Downloads](https://img.shields.io/powershellgallery/dt/WorkflowEngine)](https://www.powershellgallery.com/packages/WorkflowEngine)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A powerful, production-ready workflow execution engine for PowerShell that enables sequential, parallel, and conditional task orchestration with advanced features like context sharing, automatic retries, timeout controls, dependency management, and interactive execution.
+
+**Perfect for:** CI/CD pipelines, ETL/data processing, server automation, deployment workflows, batch processing, and any multi-step automation tasks.
 
 ## Features
 
 - **Sequential Execution** - Run tasks in a defined order with full control over execution flow
 - **Parallel Execution** - Execute independent tasks simultaneously using efficient runspace pools
 - **Conditional Steps** - Run steps based on dynamic conditions evaluated at runtime
+- **Interactive Execution** - Select and run specific steps on-demand with an interactive menu for debugging and development
 - **Context Sharing** - Share data between steps using a built-in context system
 - **Error Handling** - Automatic retries with configurable delays for both individual steps and entire workflows
 - **Timeout Support** - Prevent runaway tasks with configurable timeout limits
 - **Dependency Management** - Define dependencies between steps to control execution order
-- **Interactive Execution** - Select and run specific steps on-demand with an interactive menu
 - **Detailed Reporting** - Comprehensive execution summaries with timing information
 - **PowerShell 5.1+ Compatible** - Works on Windows PowerShell 5.1 and later
 
@@ -38,45 +44,40 @@ A powerful, production-ready workflow execution engine for PowerShell that enabl
 
 ## Installation
 
-Folder Workflowengine is the Module. Copy folder into a powrshell module folder
-default C:\Program Files\WindowsPowerShell\Modules
-or C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+### Recommended: Install from PowerShell Gallery
 
-### Option 1: Import Module Directly
+```powershell
+# Install for current user (no admin required)
+Install-Module -Name WorkflowEngine -Scope CurrentUser
 
+# Or install system-wide (requires admin)
+Install-Module -Name WorkflowEngine
 
+# Import and start using
+Import-Module WorkflowEngine
+```
 
+### Alternative: Manual Installation
 
-Import the module directly from its location:
+**Option 1: Import Module Directly**
 
 ```powershell
 Import-Module "C:\path\to\wfe\WorkflowEngine"
 ```
 
-### Option 2: Install to PowerShell Modules Folder
+**Option 2: Copy to Modules Folder**
 
-Copy the module to a system modules directory for global access (run as Administrator):
+Copy the module to a PowerShell modules directory:
 
 ```powershell
+# System-wide (requires admin)
 $modulePath = "$env:ProgramFiles\WindowsPowerShell\Modules\WorkflowEngine"
 Copy-Item -Path "C:\path\to\WorkflowEngine" -Destination $modulePath -Recurse -Force
 
-# Now you can import from anywhere
-Import-Module WorkflowEngine
-```
-
-**Alternative: Current User Only (no admin required)**
-
-```powershell
+# Or current user only (no admin required)
 $userModules = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
 if (-not (Test-Path $userModules)) { New-Item -ItemType Directory -Path $userModules -Force }
 Copy-Item -Path "C:\path\to\wfe\WorkflowEngine" -Destination "$userModules\WorkflowEngine" -Recurse -Force
-```
-
-### Option 3: Install from PSGallery (Coming Soon)
-
-```powershell
-Install-Module -Name WorkflowEngine
 ```
 
 ## Quick Start
@@ -101,8 +102,11 @@ $workflow.AddStep("Step 2", {
     Write-Host "Hello from Step 2!"
 })
 
-# Execute
+# Execute normally
 $workflow.Execute()
+
+# OR run interactively for debugging/development
+$workflow.ExecuteInteractive()
 
 # View summary
 $workflow.PrintSummary()
@@ -453,6 +457,41 @@ Run interactively:
 - **Partial Run:** Run only the build phase: `1-5`
 - **Quick Test:** Run only the tests: `7,8`
 - **Full Run:** Run everything: `all`
+
+**Example Interactive Workflow Session:**
+
+```
+========================================
+  WORKFLOW INTERACTIVE MODE
+========================================
+
+[1] [SEQUENTIAL] Step 1: Initialize [Pending]
+[2] [SEQUENTIAL] Step 2: Load Configuration [Pending]
+[3] [PARALLEL] Step 3: Build API [Pending]
+[4] [PARALLEL] Step 4: Build Frontend [Pending]
+[5] [PARALLEL] Step 5: Build Worker [Pending]
+[6] [SEQUENTIAL] Step 6: Validate Builds [Pending]
+[7] [PARALLEL] Step 7: Unit Tests [Pending]
+[8] [PARALLEL] Step 8: Integration Tests [Pending]
+[9] [SEQUENTIAL] Step 9: Generate Reports [Pending]
+[10] [SEQUENTIAL] Step 10: Notify Team [Pending]
+
+========================================
+COMMANDS:
+  - Enter step numbers (e.g., 1,3,5)
+  - Enter range (e.g., 2-6)
+  - From step to end (e.g., from 3)
+  - Up to step (e.g., to 5)
+  - All steps (e.g., all)
+  - Exit (e.g., exit or quit)
+========================================
+
+Select steps to execute: 1,2,3-5
+
+[Executes selected steps...]
+
+Press Enter to return to menu...
+```
 
 ## API Reference
 
@@ -847,6 +886,7 @@ The test suite covers:
 - Error handling and retries
 - Timeout functionality
 - Step dependencies
+- Interactive execution mode
 - Real-world scenarios
 
 ## Performance Considerations
@@ -931,7 +971,7 @@ This project is licensed under the MIT License. See the LICENSE file for details
 ## Support
 
 For issues, questions, or contributions:
-- **Issues:** Open an issue on GitHub
+- **Issues:** Open an issue on GitHub at https://github.com/someoneelse131/WorkflowEngine
 - **Discussions:** Use GitHub Discussions for questions
 - **Examples:** Check the `Examples/` folder for working code
 
