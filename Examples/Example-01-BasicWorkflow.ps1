@@ -5,7 +5,7 @@
 .DESCRIPTION
     This is the simplest possible workflow example.
     It shows how to:
-    - Load the workflow engine
+    - Load the workflow engine module
     - Create a workflow
     - Add sequential steps
     - Execute the workflow
@@ -27,12 +27,11 @@ param(
 )
 
 # ============================================================================
-# STEP 1: Load the Workflow Engine
+# STEP 1: Load the Workflow Engine Module
 # ============================================================================
-# The dot-source operator (.) loads the script into the current session
-# This makes all the workflow classes and functions available
+# Import-Module loads the module and makes all functions available
 
-. "$PSScriptRoot\..\WorkflowEngine.ps1"
+Import-Module WorkflowEngine
 
 Write-Host "=" * 60 -ForegroundColor Cyan
 Write-Host "  EXAMPLE 01: Basic Sequential Workflow" -ForegroundColor Cyan
@@ -134,7 +133,7 @@ if ($Manual) {
 <#
 WHAT YOU LEARNED:
 -----------------
-1. Load the engine with: . "path\to\WorkflowEngine.ps1"
+1. Load the engine with: Import-Module "path\to\WorkflowEngine"
 2. Create a workflow with: New-Workflow
 3. Add steps with: $workflow.AddStep("Name", { param($ctx) ... })
 4. Run with: $workflow.Execute()

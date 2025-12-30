@@ -21,7 +21,7 @@ param(
     [switch]$Manual
 )
 
-. "$PSScriptRoot\..\WorkflowEngine.ps1"
+Import-Module WorkflowEngine
 
 Write-Host ("=" * 70) -ForegroundColor Cyan
 Write-Host "  EXAMPLE 08: All Configuration Options" -ForegroundColor Cyan

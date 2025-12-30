@@ -1,6 +1,6 @@
 # PowerShell Workflow Engine (WFE)
 
-A powerful, production-ready workflow execution engine for PowerShell that enables sequential, parallel, and conditional task orchestration with advanced features like context sharing, automatic retries, timeout controls, and dependency management.
+A powerful, production-ready workflow execution engine for PowerShell that enables sequential, parallel, and conditional task orchestration with advanced features like context sharing, automatic retries, timeout controls, dependency management, and interactive execution.
 
 ## Features
 
@@ -11,8 +11,9 @@ A powerful, production-ready workflow execution engine for PowerShell that enabl
 - **Error Handling** - Automatic retries with configurable delays for both individual steps and entire workflows
 - **Timeout Support** - Prevent runaway tasks with configurable timeout limits
 - **Dependency Management** - Define dependencies between steps to control execution order
+- **Interactive Execution** - Select and run specific steps on-demand with an interactive menu
 - **Detailed Reporting** - Comprehensive execution summaries with timing information
-- **PowerShell 5.1+ Compatible** - Works on Windows PowerShell 5.1 and PowerShell Core
+- **PowerShell 5.1+ Compatible** - Works on Windows PowerShell 5.1 and later
 
 ## Table of Contents
 
@@ -26,6 +27,7 @@ A powerful, production-ready workflow execution engine for PowerShell that enabl
   - [Context Sharing](#context-sharing)
   - [Error Handling](#error-handling)
   - [Step Dependencies](#step-dependencies)
+  - [Interactive Execution](#interactive-execution)
 - [API Reference](#api-reference)
 - [Configuration Options](#configuration-options)
 - [Advanced Features](#advanced-features)
@@ -36,22 +38,38 @@ A powerful, production-ready workflow execution engine for PowerShell that enabl
 
 ## Installation
 
-### Option 1: Direct Download
+### Option 1: Import Module Directly
 
-1. Clone or download this repository
-2. Load the workflow engine in your PowerShell script:
+Import the module directly from its location:
 
 ```powershell
-. "C:\path\to\WorkflowEngine.ps1"
+Import-Module "C:\path\to\wfe\WorkflowEngine"
 ```
 
-### Option 2: Module Import
+### Option 2: Install to PowerShell Modules Folder
 
-1. Copy `WorkflowEngine.ps1` to a module directory
-2. Import it in your scripts:
+Copy the module to a system modules directory for global access (run as Administrator):
 
 ```powershell
-Import-Module "C:\path\to\WorkflowEngine.ps1"
+$modulePath = "$env:ProgramFiles\WindowsPowerShell\Modules\WorkflowEngine"
+Copy-Item -Path "C:\path\to\wfe\WorkflowEngine" -Destination $modulePath -Recurse -Force
+
+# Now you can import from anywhere
+Import-Module WorkflowEngine
+```
+
+**Alternative: Current User Only (no admin required)**
+
+```powershell
+$userModules = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
+if (-not (Test-Path $userModules)) { New-Item -ItemType Directory -Path $userModules -Force }
+Copy-Item -Path "C:\path\to\wfe\WorkflowEngine" -Destination "$userModules\WorkflowEngine" -Recurse -Force
+```
+
+### Option 3: Install from PSGallery (Coming Soon)
+
+```powershell
+Install-Module -Name WorkflowEngine
 ```
 
 ## Quick Start
@@ -59,8 +77,8 @@ Import-Module "C:\path\to\WorkflowEngine.ps1"
 Create and run your first workflow in seconds:
 
 ```powershell
-# Load the engine
-. ".\WorkflowEngine.ps1"
+# Load the module
+Import-Module WorkflowEngine
 
 # Create a workflow
 $workflow = New-Workflow
@@ -91,6 +109,7 @@ A workflow is a container for steps that executes them according to your defined
 - Multiple retry attempts for the entire workflow
 - Configurable delays between retries
 - Optional continuation on error
+- Interactive execution mode
 
 ### Steps
 
@@ -119,7 +138,7 @@ The context is a shared data store that allows steps to communicate:
 ### Basic Sequential Workflow
 
 ```powershell
-. ".\WorkflowEngine.ps1"
+Import-Module WorkflowEngine
 
 $workflow = New-Workflow
 
@@ -360,6 +379,74 @@ $step4 = $workflow.AddDependentStep(
 $workflow.Execute()
 ```
 
+### Interactive Execution
+
+Run workflows interactively to select which steps to execute. This is useful for debugging, development, and recovery scenarios.
+
+```powershell
+$workflow = New-Workflow
+
+$workflow.AddStep("Step 1: Initialize", { param($ctx) Write-Host "Initializing..." })
+$workflow.AddStep("Step 2: Build", { param($ctx) Write-Host "Building..." })
+$workflow.AddStep("Step 3: Test", { param($ctx) Write-Host "Testing..." })
+$workflow.AddStep("Step 4: Deploy", { param($ctx) Write-Host "Deploying..." })
+
+# Run interactively - presents a menu to select steps
+$workflow.ExecuteInteractive()
+```
+
+**Interactive Commands:**
+
+| Command | Description |
+|---------|-------------|
+| `all` | Run all steps |
+| `1,3,5` | Run specific steps (comma-separated) |
+| `2-6` | Run a range of steps |
+| `from 5` | Run from step 5 to the end |
+| `to 4` | Run from step 1 to step 4 |
+| `1,3-5,9` | Mix individual steps and ranges |
+| `exit` / `quit` / `q` | Exit interactive mode |
+
+**Using the -Manual Parameter Pattern:**
+
+Most examples support a `-Manual` switch for interactive mode:
+
+```powershell
+# In your script
+param(
+    [switch]$Manual
+)
+
+Import-Module WorkflowEngine
+
+$workflow = New-Workflow
+# ... add steps ...
+
+if ($Manual) {
+    $workflow.ExecuteInteractive()
+} else {
+    $workflow.Execute()
+}
+```
+
+Run normally:
+```powershell
+.\MyWorkflow.ps1
+```
+
+Run interactively:
+```powershell
+.\MyWorkflow.ps1 -Manual
+```
+
+**Common Use Cases for Interactive Mode:**
+
+- **Debugging:** Run only the failing step: `3`
+- **Resume:** Skip completed steps and resume: `from 6`
+- **Partial Run:** Run only the build phase: `1-5`
+- **Quick Test:** Run only the tests: `7,8`
+- **Full Run:** Run everything: `all`
+
 ## API Reference
 
 ### New-Workflow
@@ -435,13 +522,23 @@ $step = $workflow.AddDependentStep(
 
 #### Execute
 
-Execute the workflow.
+Execute the workflow (all steps in order).
 
 ```powershell
 $success = $workflow.Execute()
 ```
 
 **Returns:** Boolean - true if successful, false if failed
+
+#### ExecuteInteractive
+
+Execute the workflow interactively, allowing selection of specific steps.
+
+```powershell
+$workflow.ExecuteInteractive()
+```
+
+Presents a menu where you can select which steps to run using commands like `all`, `1,3,5`, `2-6`, `from 5`, `to 4`, or `exit`.
 
 #### PrintSummary
 
@@ -813,7 +910,7 @@ $step.Timeout = 600  # Increase to 10 minutes
 ## Requirements
 
 - **PowerShell 5.1** or later
-- **Windows PowerShell** or **PowerShell Core** (cross-platform)
+- **Windows PowerShell 5.1** or later
 - No external dependencies
 
 ## Contributing
@@ -823,7 +920,7 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 ### Development Setup
 
 1. Clone the repository
-2. Make your changes to `WorkflowEngine.ps1`
+2. Make your changes to `WorkflowEngine/WorkflowEngine.psm1`
 3. Add tests to `WorkflowEngine.Tests.ps1`
 4. Run the test suite
 5. Submit a pull request
@@ -850,8 +947,9 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - Error handling and retries
 - Timeout support
 - Step dependencies
+- Interactive execution mode
 - Comprehensive test suite
-- 8 example workflows
+- 9 example workflows
 
 ## Support
 
@@ -862,4 +960,4 @@ For issues, questions, or contributions:
 
 ## Acknowledgments
 
-Built with PowerShell 5.1+ compatibility in mind to support both Windows PowerShell and PowerShell Core environments.
+Built with PowerShell 5.1+ compatibility in mind.

@@ -1,4 +1,5 @@
 #requires -Version 5.1
+using module WorkflowEngine
 
 <#
 .SYNOPSIS
@@ -23,9 +24,6 @@
 param(
     [string]$LogPath
 )
-
-# Load the workflow engine
-. "$PSScriptRoot\WorkflowEngine.ps1"
 
 #region Logging Infrastructure
 

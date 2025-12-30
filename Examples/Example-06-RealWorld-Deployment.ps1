@@ -24,7 +24,7 @@ param(
     [switch]$Manual
 )
 
-. "$PSScriptRoot\..\WorkflowEngine.ps1"
+Import-Module WorkflowEngine
 
 # ============================================================================
 # CONFIGURATION - Change these to test different scenarios!

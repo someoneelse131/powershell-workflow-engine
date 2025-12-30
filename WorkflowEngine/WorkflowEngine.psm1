@@ -703,8 +703,6 @@ class WfeWorkflow {
     # ============================================================================
 
     hidden [string] ExtractStepDescription([object]$step) {
-        # For now, return empty string
-        # Future enhancement: Parse scriptblock comments or add Description property
         return ""
     }
 
@@ -713,7 +711,6 @@ class WfeWorkflow {
 
         foreach ($item in $this.Steps) {
             if ($item.GetType().Name -eq 'ParallelGroup') {
-                # Add parallel group steps
                 foreach ($parallelStep in $item.Steps) {
                     $stepList += @{
                         OriginalStep = $parallelStep
@@ -725,7 +722,6 @@ class WfeWorkflow {
                     }
                 }
             } else {
-                # Regular sequential step
                 $stepList += @{
                     OriginalStep = $item
                     ParallelGroup = $null
@@ -743,12 +739,10 @@ class WfeWorkflow {
     hidden [hashtable] ParseStepSelection([string]$input, [array]$stepList) {
         $input = $input.Trim().ToLower()
 
-        # Check for exit
         if ($input -in @("exit", "quit", "q")) {
             return @{ Action = "Exit" }
         }
 
-        # Check for "all"
         if ($input -eq "all") {
             $selectedIndices = 1..$stepList.Count
             return @{
@@ -758,7 +752,6 @@ class WfeWorkflow {
             }
         }
 
-        # Parse "from X"
         if ($input -match "^from\s+(\d+)$") {
             $start = [int]$matches[1]
             $selectedIndices = $start..$stepList.Count
@@ -769,7 +762,6 @@ class WfeWorkflow {
             }
         }
 
-        # Parse "to X"
         if ($input -match "^to\s+(\d+)$") {
             $end = [int]$matches[1]
             $selectedIndices = 1..$end
@@ -780,23 +772,19 @@ class WfeWorkflow {
             }
         }
 
-        # Parse ranges and individual numbers (e.g., "1,3,5-7,9")
         $selectedIndices = @()
         $parts = $input -split ','
         foreach ($part in $parts) {
             $part = $part.Trim()
             if ($part -match '^(\d+)-(\d+)$') {
-                # Range
                 $start = [int]$matches[1]
                 $end = [int]$matches[2]
                 $selectedIndices += $start..$end
             } elseif ($part -match '^\d+$') {
-                # Single number
                 $selectedIndices += [int]$part
             }
         }
 
-        # Validate indices
         $selectedIndices = $selectedIndices | Where-Object { $_ -ge 1 -and $_ -le $stepList.Count } | Sort-Object -Unique
 
         return @{
@@ -813,10 +801,8 @@ class WfeWorkflow {
         Write-Host "========================================" -ForegroundColor Cyan
         Write-Host ""
 
-        # Build flat list of all steps with indices
         $stepList = $this.BuildStepList()
 
-        # Display steps
         $index = 1
         foreach ($item in $stepList) {
             $status = $item.Status
@@ -836,7 +822,6 @@ class WfeWorkflow {
             Write-Host $item.Name -ForegroundColor $color -NoNewline
             Write-Host " $statusText" -ForegroundColor $color
 
-            # Show description if available
             if ($item.Description) {
                 Write-Host "      $($item.Description)" -ForegroundColor Gray
             }
@@ -873,13 +858,11 @@ class WfeWorkflow {
             return
         }
 
-        # Use runspace pool for true parallel execution
         $runspacePool = [runspacefactory]::CreateRunspacePool(1, [Math]::Max($group.MaxParallelism, $selectedSteps.Count))
         $runspacePool.Open()
 
         $runspaces = @{}
 
-        # Start all runspaces
         foreach ($step in $selectedSteps) {
             Write-Host "[START] '$($step.Name)'" -ForegroundColor Cyan
             $step.Status = [StepStatus]::Running
@@ -896,10 +879,8 @@ class WfeWorkflow {
             [void]$powershell.AddScript({
                 param($actionString, $contextVars, $retries, $retryDelay)
 
-                # Recreate the scriptblock from string
                 $stepAction = [scriptblock]::Create($actionString)
 
-                # Create simple context object
                 $ctx = New-Object PSObject -Property @{ Variables = $contextVars }
 
                 Add-Member -InputObject $ctx -MemberType ScriptMethod -Name Set -Value {
@@ -928,7 +909,6 @@ class WfeWorkflow {
                     return $null
                 } -Force
 
-                # Execute with retries
                 for ($i = 1; $i -le $retries; $i++) {
                     try {
                         $result = & $stepAction $ctx
@@ -972,7 +952,6 @@ class WfeWorkflow {
         if ($runspaces.Count -gt 0) {
             Write-Host "Waiting for $($runspaces.Count) parallel tasks..." -ForegroundColor Cyan
 
-            # Wait for all runspaces to complete
             $failedStep = $null
 
             foreach ($stepId in $runspaces.Keys) {
@@ -982,14 +961,12 @@ class WfeWorkflow {
                 $handle = $runspaceInfo.Handle
 
                 try {
-                    # Wait for this runspace to complete
                     $result = $powershell.EndInvoke($handle)
 
                     $step.EndTime = Get-Date
                     $duration = $step.GetDurationSeconds()
                     $durationText = $duration.ToString('F2') + "s"
 
-                    # Check for errors in the stream
                     if ($powershell.Streams.Error.Count -gt 0) {
                         $errorMsg = $powershell.Streams.Error[0].ToString()
                         Write-Host "[FAIL] '$($step.Name)' stream error: $errorMsg" -ForegroundColor Red
@@ -1030,11 +1007,9 @@ class WfeWorkflow {
                 }
             }
 
-            # Clean up runspace pool
             $runspacePool.Close()
             $runspacePool.Dispose()
 
-            # If we had a failure and ContinueOnError is false, throw now
             if ($null -ne $failedStep) {
                 throw "Parallel step '$($failedStep.Name)' failed: $($failedStep.ErrorMessage)"
             }
@@ -1053,13 +1028,11 @@ class WfeWorkflow {
             return
         }
 
-        # Build list of selected steps
         $selectedSteps = @()
         foreach ($index in $selectedIndices) {
             $selectedSteps += $stepList[$index - 1]
         }
 
-        # Group by parallel groups to handle partial selections
         $parallelGroupSelections = @{}
         $sequentialSteps = @()
 
@@ -1078,18 +1051,15 @@ class WfeWorkflow {
             }
         }
 
-        # Completed steps tracker
         $completedSteps = @{}
         $stepNumber = 1
 
-        # Execute steps in original order
         foreach ($item in $this.Steps) {
             if ($item.GetType().Name -eq 'ParallelGroup') {
                 $groupId = $item.Id
                 if ($parallelGroupSelections.ContainsKey($groupId)) {
                     $stepsToRun = $parallelGroupSelections[$groupId].SelectedSteps
 
-                    # If not all parallel steps selected, inform user
                     if ($stepsToRun.Count -lt $item.Steps.Count) {
                         Write-Host ""
                         Write-Host "Parallel Group: $($item.Name)" -ForegroundColor Yellow
@@ -1098,7 +1068,6 @@ class WfeWorkflow {
                         Write-Host ""
                     }
 
-                    # Execute selected parallel steps
                     try {
                         $this.ExecuteParallelGroupFiltered($item, $stepsToRun, $completedSteps)
                     } catch {
@@ -1108,7 +1077,6 @@ class WfeWorkflow {
                     }
                 }
             } else {
-                # Sequential step
                 if ($item -in $sequentialSteps) {
                     try {
                         $this.ExecuteSequentialStep($item, $completedSteps, $stepNumber)
@@ -1130,10 +1098,8 @@ class WfeWorkflow {
         $this.StartTime = Get-Date
 
         while ($true) {
-            # Display menu with all steps
             $selection = $this.ShowInteractiveMenu()
 
-            # Check if user wants to exit
             if ($selection.Action -eq "Exit") {
                 Write-Host ""
                 Write-Host "Exiting interactive mode..." -ForegroundColor Yellow
@@ -1141,7 +1107,6 @@ class WfeWorkflow {
                 break
             }
 
-            # Execute selected steps
             try {
                 Write-Host ""
                 Write-Host "========================================" -ForegroundColor Cyan
@@ -1163,12 +1128,16 @@ class WfeWorkflow {
                 Write-Host "========================================" -ForegroundColor Red
             }
 
-            # Show summary after execution
             $this.PrintSummary()
 
             Write-Host ""
-            Write-Host "Press any key to return to menu..." -ForegroundColor Cyan
-            [void][System.Console]::ReadKey($true)
+            Write-Host "Press Enter to return to menu..." -ForegroundColor Cyan
+            try {
+                [void][System.Console]::ReadKey($true)
+            } catch {
+                # Fallback for environments without console (ISE, VS Code, etc.)
+                Read-Host
+            }
         }
 
         $this.EndTime = Get-Date
@@ -1184,17 +1153,31 @@ function New-Workflow {
     <#
     .SYNOPSIS
         Creates a new workflow instance
+    .DESCRIPTION
+        Creates a new WfeWorkflow object that can be used to define and execute workflow steps.
     .PARAMETER WorkflowRetries
-        Number of times to retry the entire workflow on failure
+        Number of times to retry the entire workflow on failure. Default is 1.
     .PARAMETER WorkflowDelay
-        Seconds to wait between workflow retries
+        Seconds to wait between workflow retries. Default is 60.
     .PARAMETER ContinueOnError
-        If true, continue executing steps even if one fails
+        If true, continue executing steps even if one fails. Default is false.
+    .EXAMPLE
+        $workflow = New-Workflow
+        $workflow.AddStep("Step 1", { param($ctx) Write-Host "Hello" })
+        $workflow.Execute()
+    .EXAMPLE
+        $workflow = New-Workflow -WorkflowRetries 3 -ContinueOnError $true
     #>
     [CmdletBinding()]
+    [OutputType([WfeWorkflow])]
     param(
+        [Parameter()]
         [int]$WorkflowRetries = 1,
+        
+        [Parameter()]
         [int]$WorkflowDelay = 60,
+        
+        [Parameter()]
         [bool]$ContinueOnError = $false
     )
     
@@ -1206,4 +1189,38 @@ function New-Workflow {
     return $workflow
 }
 
+function New-WorkflowStep {
+    <#
+    .SYNOPSIS
+        Creates a new workflow step (standalone, not added to a workflow)
+    .DESCRIPTION
+        Creates a WorkflowStep object that can be customized before adding to a workflow or parallel group.
+    .PARAMETER Name
+        The name of the step
+    .PARAMETER Action
+        The scriptblock to execute
+    .EXAMPLE
+        $step = New-WorkflowStep -Name "My Step" -Action { param($ctx) Write-Host "Running" }
+        $step.Retries = 5
+        $step.Timeout = 120
+    #>
+    [CmdletBinding()]
+    [OutputType([WorkflowStep])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Name,
+        
+        [Parameter(Mandatory)]
+        [scriptblock]$Action
+    )
+    
+    return [WorkflowStep]::new($Name, $Action)
+}
+
 #endregion
+
+# Export public functions and types
+Export-ModuleMember -Function @(
+    'New-Workflow',
+    'New-WorkflowStep'
+)
