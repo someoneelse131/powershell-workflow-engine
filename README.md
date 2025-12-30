@@ -62,12 +62,14 @@ Import-Module WorkflowEngine
 **Option 1: Import Module Directly**
 
 ```powershell
-Import-Module "C:\path\to\wfe\WorkflowEngine"
+$modulePath = "$env:ProgramFiles\WindowsPowerShell\Modules\WorkflowEngine"
+Copy-Item -Path "C:\path\to\WorkflowEngine" -Destination $modulePath -Recurse -Force
+
+# Now you can import from anywhere
+Import-Module WorkflowEngine
 ```
 
-**Option 2: Copy to Modules Folder**
-
-Copy the module to a PowerShell modules directory:
+**Alternative: Current User Only (no admin required)**
 
 ```powershell
 # System-wide (requires admin)
