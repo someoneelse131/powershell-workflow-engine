@@ -77,7 +77,7 @@ Copy-Item -Path "C:\path\to\WorkflowEngine" -Destination $modulePath -Recurse -F
 # Or current user only (no admin required)
 $userModules = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
 if (-not (Test-Path $userModules)) { New-Item -ItemType Directory -Path $userModules -Force }
-Copy-Item -Path "C:\path\to\wfe\WorkflowEngine" -Destination "$userModules\WorkflowEngine" -Recurse -Force
+Copy-Item -Path "C:\path\to\WorkflowEngine" -Destination "$userModules\WorkflowEngine" -Recurse -Force
 ```
 
 ## Quick Start
