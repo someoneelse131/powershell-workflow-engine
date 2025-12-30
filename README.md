@@ -4,6 +4,10 @@
 [![PowerShell Gallery Downloads](https://img.shields.io/powershellgallery/dt/WorkflowEngine)](https://www.powershellgallery.com/packages/WorkflowEngine)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+[![PowerShell Gallery Version](https://img.shields.io/powershellgallery/v/WorkflowEngine)](https://www.powershellgallery.com/packages/WorkflowEngine)
+[![PowerShell Gallery Downloads](https://img.shields.io/powershellgallery/dt/WorkflowEngine)](https://www.powershellgallery.com/packages/WorkflowEngine)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A powerful, production-ready workflow execution engine for PowerShell that enables sequential, parallel, and conditional task orchestration with advanced features like context sharing, automatic retries, timeout controls, dependency management, and interactive execution.
 
 **Perfect for:** CI/CD pipelines, ETL/data processing, server automation, deployment workflows, batch processing, and any multi-step automation tasks.
@@ -44,19 +48,17 @@ A powerful, production-ready workflow execution engine for PowerShell that enabl
 
 ## Installation
 
-Folder Workflowengine is the Module. Copy folder into a powrshell module folder
-default C:\Program Files\WindowsPowerShell\Modules
-or C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
-
-### Option 1: Import Module Directly
-
-
-
-
-Import the module directly from its location:
+### Recommended: Install from PowerShell Gallery
 
 ```powershell
-Import-Module "C:\path\to\wfe\WorkflowEngine"
+# Install for current user (no admin required)
+Install-Module -Name WorkflowEngine -Scope CurrentUser
+
+# Or install system-wide (requires admin)
+Install-Module -Name WorkflowEngine
+
+# Import and start using
+Import-Module WorkflowEngine
 ```
 
 ### Alternative: Manual Installation
@@ -64,14 +66,12 @@ Import-Module "C:\path\to\wfe\WorkflowEngine"
 **Option 1: Import Module Directly**
 
 ```powershell
-$modulePath = "$env:ProgramFiles\WindowsPowerShell\Modules\WorkflowEngine"
-Copy-Item -Path "C:\path\to\WorkflowEngine" -Destination $modulePath -Recurse -Force
-
-# Now you can import from anywhere
-Import-Module WorkflowEngine
+Import-Module "C:\path\to\wfe\WorkflowEngine"
 ```
 
-**Alternative: Current User Only (no admin required)**
+**Option 2: Copy to Modules Folder**
+
+Copy the module to a PowerShell modules directory:
 
 ```powershell
 # System-wide (requires admin)
