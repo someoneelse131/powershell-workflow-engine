@@ -62,7 +62,7 @@ Import-Module WorkflowEngine
 **Option 1: Import Module Directly**
 
 ```powershell
-Import-Module "C:\path\to\wfe\WorkflowEngine"
+Import-Module "C:\path\to\WorkflowEngine"
 ```
 
 **Option 2: Copy to Modules Folder**
@@ -77,7 +77,7 @@ Copy-Item -Path "C:\path\to\WorkflowEngine" -Destination $modulePath -Recurse -F
 # Or current user only (no admin required)
 $userModules = "$env:USERPROFILE\Documents\WindowsPowerShell\Modules"
 if (-not (Test-Path $userModules)) { New-Item -ItemType Directory -Path $userModules -Force }
-Copy-Item -Path "C:\path\to\wfe\WorkflowEngine" -Destination "$userModules\WorkflowEngine" -Recurse -Force
+Copy-Item -Path "C:\path\to\WorkflowEngine" -Destination "$userModules\WorkflowEngine" -Recurse -Force
 ```
 
 ## Quick Start
@@ -870,10 +870,7 @@ The project includes comprehensive unit tests. Run them with:
 
 ```powershell
 # Run all tests
-Pester .\WorkflowEngine.Tests.ps1
-
-# Run specific test
-Pester .\WorkflowEngine.Tests.ps1 -TestName "Basic Workflow Execution"
+.\WorkflowEngine.Tests.ps1
 ```
 
 ### Test Coverage
