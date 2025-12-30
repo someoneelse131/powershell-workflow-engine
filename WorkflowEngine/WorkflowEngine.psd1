@@ -48,16 +48,19 @@
             Tags = @('Workflow', 'Automation', 'Parallel', 'Pipeline', 'Orchestration', 'Tasks', 'CI-CD', 'DevOps', 'Debugging', 'ETL', 'DataProcessing', 'BatchProcessing', 'Deployment', 'BuildAutomation')
             
             # A URL to the license for this module
-            LicenseUri = 'https://github.com/someoneelse131/WorkflowEngine/blob/main/LICENSE'
+            LicenseUri = 'https://github.com/someoneelse131/powershell-workflow-engine/blob/main/LICENSE'
             
             # A URL to the main website for this project
-            ProjectUri = 'https://github.com/someoneelse131/WorkflowEngine'
+            ProjectUri = 'https://github.com/someoneelse131/powershell-workflow-engine'
             
             # A URL to an icon representing this module
             # IconUri = ''
             
             # ReleaseNotes of this module
             ReleaseNotes = @'
+
+## 1.0.1 - Project Link fix
+
 ## 1.0.0 - Initial Release
 ### Core Features
 - Sequential workflow execution with automatic ordering
@@ -82,7 +85,7 @@
 - Configurable parallelism limits
 - Efficient context synchronization
 
-See full documentation and examples at: https://github.com/someoneelse131/WorkflowEngine
+See full documentation and examples at: https://github.com/someoneelse131/powershell-workflow-engine
 '@
             
             # Prerelease string of this module
