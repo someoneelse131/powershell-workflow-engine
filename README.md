@@ -38,11 +38,13 @@ A powerful, production-ready workflow execution engine for PowerShell that enabl
 
 ## Installation
 
-### Option 1: Import Module Directly
-
 Folder Workflowengine is the Module. Copy folder into a powrshell module folder
 default C:\Program Files\WindowsPowerShell\Modules
 or C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules
+
+### Option 1: Import Module Directly
+
+
 
 
 Import the module directly from its location:
@@ -922,39 +924,9 @@ $step.Timeout = 600  # Increase to 10 minutes
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
 
-### Development Setup
-
-1. Clone the repository
-2. Make your changes to `WorkflowEngine/WorkflowEngine.psm1`
-3. Add tests to `WorkflowEngine.Tests.ps1`
-4. Run the test suite
-5. Submit a pull request
-
-### Coding Standards
-
-- Follow PowerShell best practices
-- Include comment-based help for new functions
-- Add examples for new features
-- Ensure all tests pass
-
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
-
-## Changelog
-
-### Version 1.0.0
-- Initial release
-- Sequential workflow execution
-- Parallel execution with runspace pools
-- Conditional steps
-- Context sharing
-- Error handling and retries
-- Timeout support
-- Step dependencies
-- Interactive execution mode
-- Comprehensive test suite
-- 9 example workflows
 
 ## Support
 
