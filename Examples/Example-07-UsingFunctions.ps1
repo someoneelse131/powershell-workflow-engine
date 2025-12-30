@@ -5,19 +5,29 @@
 .DESCRIPTION
     As workflows grow, you will want to organize code into reusable functions.
     This example shows different patterns for using functions with workflows.
-    
+
     This example demonstrates:
     - Defining helper functions
     - Functions that return success/failure
     - Functions that work with context
     - Organizing code in separate files
 
+.PARAMETER Manual
+    Run in interactive mode - choose which steps to execute
+
 .NOTES
     Run this script from PowerShell:
     .\Example-07-UsingFunctions.ps1
+
+    For interactive mode:
+    .\Example-07-UsingFunctions.ps1 -Manual
 #>
 
-. "$PSScriptRoot\..\WorkflowEngine.ps1"
+param(
+    [switch]$Manual
+)
+
+Import-Module WorkflowEngine
 
 Write-Host ("=" * 60) -ForegroundColor Cyan
 Write-Host "  EXAMPLE 07: Using Functions in Workflows" -ForegroundColor Cyan
@@ -295,8 +305,12 @@ $workflow.AddStep("Generate Summary", {
 })
 
 # Execute
-$workflow.Execute()
-$workflow.PrintSummary()
+if ($Manual) {
+    $workflow.ExecuteInteractive()
+} else {
+    $workflow.Execute()
+    $workflow.PrintSummary()
+}
 
 <#
 PATTERNS DEMONSTRATED:
@@ -350,7 +364,7 @@ Put functions in a separate file:
 
   MyWorkflow.ps1:
   . .\MyFunctions.ps1
-  . ..\WorkflowEngine.ps1
+  Import-Module ..\WorkflowEngine
   $workflow = New-Workflow
   ...
 

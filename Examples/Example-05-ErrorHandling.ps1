@@ -5,19 +5,29 @@
 .DESCRIPTION
     Real-world tasks can fail. The workflow engine provides automatic retries
     at both the step level and workflow level.
-    
+
     This example shows how to:
     - Configure step retries
     - Handle expected failures
     - Use ContinueOnError
     - Configure workflow-level retries
 
+.PARAMETER Manual
+    Run in interactive mode - choose which steps to execute
+
 .NOTES
     Run this script from PowerShell:
     .\Example-05-ErrorHandling.ps1
+
+    For interactive mode:
+    .\Example-05-ErrorHandling.ps1 -Manual
 #>
 
-. "$PSScriptRoot\..\WorkflowEngine.ps1"
+param(
+    [switch]$Manual
+)
+
+Import-Module WorkflowEngine
 
 Write-Host "=" * 60 -ForegroundColor Cyan
 Write-Host "  EXAMPLE 05: Error Handling & Retries" -ForegroundColor Cyan
@@ -55,7 +65,11 @@ $step = $workflow1.AddStep("Flaky API Call", {
 $step.Retries = 5        # Try up to 5 times
 $step.RetryDelay = 1     # Wait 1 second between retries (normally you'd use 30+)
 
-$workflow1.Execute()
+if ($Manual) {
+    $workflow1.ExecuteInteractive()
+} else {
+    $workflow1.Execute()
+}
 Write-Host ""
 
 # ============================================================================
@@ -108,7 +122,11 @@ $workflow2.AddStep("Method 3: Conditional Failure", {
     Write-Host "  Disk space OK: $diskSpace GB available"
 })
 
-$workflow2.Execute()
+if ($Manual) {
+    $workflow2.ExecuteInteractive()
+} else {
+    $workflow2.Execute()
+}
 Write-Host ""
 
 # ============================================================================
@@ -144,7 +162,11 @@ $workflow3.AddStep("Step 4: Also Runs", {
     Write-Host "  Step 4 completing the workflow..."
 })
 
-$workflow3.Execute()
+if ($Manual) {
+    $workflow3.ExecuteInteractive()
+} else {
+    $workflow3.Execute()
+}
 $workflow3.PrintSummary()
 
 Write-Host ""
@@ -186,7 +208,11 @@ $workflow4.AddStep("Finalize", {
     Write-Host "  Finalizing..."
 })
 
-$workflow4.Execute()
+if ($Manual) {
+    $workflow4.ExecuteInteractive()
+} else {
+    $workflow4.Execute()
+}
 Write-Host ""
 
 # ============================================================================
@@ -245,7 +271,11 @@ $workflow5.AddStep("Check Results", {
     }
 })
 
-$workflow5.Execute()
+if ($Manual) {
+    $workflow5.ExecuteInteractive()
+} else {
+    $workflow5.Execute()
+}
 
 <#
 WHAT YOU LEARNED:

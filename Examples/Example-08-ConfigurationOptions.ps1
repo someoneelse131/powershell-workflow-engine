@@ -6,12 +6,22 @@
     This example shows ALL configurable parameters for workflows, steps,
     and parallel groups. Use this as a reference for customizing behavior.
 
+.PARAMETER Manual
+    Run in interactive mode - choose which steps to execute
+
 .NOTES
     Run this script from PowerShell:
     .\Example-08-ConfigurationOptions.ps1
+
+    For interactive mode:
+    .\Example-08-ConfigurationOptions.ps1 -Manual
 #>
 
-. "$PSScriptRoot\..\WorkflowEngine.ps1"
+param(
+    [switch]$Manual
+)
+
+Import-Module WorkflowEngine
 
 Write-Host ("=" * 70) -ForegroundColor Cyan
 Write-Host "  EXAMPLE 08: All Configuration Options" -ForegroundColor Cyan
@@ -211,8 +221,12 @@ $normalStep = $timeoutDemo.AddStep("Normal Step (no timeout)", {
 $normalStep.Timeout = 0  # No timeout
 $normalStep.Retries = 1
 
-$timeoutDemo.Execute()
-$timeoutDemo.PrintSummary()
+if ($Manual) {
+    $timeoutDemo.ExecuteInteractive()
+} else {
+    $timeoutDemo.Execute()
+    $timeoutDemo.PrintSummary()
+}
 
 # ============================================================================
 # SECTION 5: CONTEXT PRE-LOADING
