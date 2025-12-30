@@ -12,16 +12,16 @@
     GUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     
     # Author of this module
-    Author = 'Your Name'
+    Author = 'Florian Chiaruzzi'
     
     # Company or vendor of this module
-    CompanyName = 'Unknown'
+    CompanyName = 'Florian Chiaruzzi'
     
     # Copyright statement for this module
-    Copyright = '(c) 2024. All rights reserved.'
+    Copyright = '(c) 2025 Florian Chiaruzzi. MIT License.'
     
     # Description of the functionality provided by this module
-    Description = 'A powerful workflow engine for PowerShell with support for sequential, parallel, and conditional execution. Features include retry logic, timeouts, context sharing between steps, and interactive execution mode.'
+    Description = 'A powerful workflow engine for PowerShell with support for sequential, parallel, and conditional execution. Features include automatic retries, timeouts, context sharing, dependency management, and interactive execution mode for debugging and selective step execution.'
     
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = '5.1'
@@ -45,29 +45,44 @@
     PrivateData = @{
         PSData = @{
             # Tags applied to this module for discoverability in online galleries
-            Tags = @('Workflow', 'Automation', 'Parallel', 'Pipeline', 'Orchestration', 'Tasks')
+            Tags = @('Workflow', 'Automation', 'Parallel', 'Pipeline', 'Orchestration', 'Tasks', 'CI-CD', 'DevOps', 'Debugging', 'ETL', 'DataProcessing', 'BatchProcessing', 'Deployment', 'BuildAutomation')
             
             # A URL to the license for this module
-            # LicenseUri = ''
+            LicenseUri = 'https://github.com/someoneelse131/WorkflowEngine/blob/main/LICENSE'
             
             # A URL to the main website for this project
-            # ProjectUri = ''
+            ProjectUri = 'https://github.com/someoneelse131/WorkflowEngine'
             
             # A URL to an icon representing this module
             # IconUri = ''
             
             # ReleaseNotes of this module
             ReleaseNotes = @'
-## 1.0.0
-- Initial release
-- Sequential workflow execution
-- Parallel execution with runspace pools
-- Conditional steps
-- Retry logic with configurable attempts and delays
-- Step timeouts
-- Context sharing between steps
-- Interactive execution mode
-- Workflow summary and reporting
+## 1.0.0 - Initial Release
+### Core Features
+- Sequential workflow execution with automatic ordering
+- Parallel execution using efficient runspace pools (4x faster than jobs)
+- Conditional steps with runtime condition evaluation
+- Step dependency management for complex workflows
+
+### Error Handling & Reliability
+- Configurable retry logic at both step and workflow levels
+- Step timeouts to prevent runaway operations
+- ContinueOnError mode for fault-tolerant workflows
+- Comprehensive error reporting and logging
+
+### Developer Experience
+- Interactive execution mode - select and run specific steps interactively
+- Context sharing between steps for data passing
+- Detailed execution summaries with timing information
+- Extensive examples covering all features (9 examples + real-world scenarios)
+
+### Performance
+- Runspace pool-based parallel execution
+- Configurable parallelism limits
+- Efficient context synchronization
+
+See full documentation and examples at: https://github.com/someoneelse131/WorkflowEngine
 '@
             
             # Prerelease string of this module
