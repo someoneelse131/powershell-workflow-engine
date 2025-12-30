@@ -62,7 +62,7 @@ Import-Module WorkflowEngine
 **Option 1: Import Module Directly**
 
 ```powershell
-Import-Module "C:\path\to\wfe\WorkflowEngine"
+Import-Module "C:\path\to\WorkflowEngine"
 ```
 
 **Option 2: Copy to Modules Folder**
