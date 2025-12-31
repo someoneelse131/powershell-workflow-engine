@@ -3,7 +3,7 @@
     RootModule = 'WorkflowEngine.psm1'
     
     # Version number of this module
-    ModuleVersion = '1.0.1'
+    ModuleVersion = '1.0.2'
     
     # Supported PSEditions
     CompatiblePSEditions = @('Desktop')
@@ -18,7 +18,7 @@
     CompanyName = 'Florian Chiaruzzi'
     
     # Copyright statement for this module
-    Copyright = '(c) 2025 Florian Chiaruzzi. MIT License.'
+    Copyright = '2026 Florian Chiaruzzi. MIT License.'
     
     # Description of the functionality provided by this module
     Description = 'A powerful workflow engine for PowerShell with support for sequential, parallel, and conditional execution. Features include automatic retries, timeouts, context sharing, dependency management, and interactive execution mode for debugging and selective step execution.'
@@ -58,6 +58,16 @@
             
             # ReleaseNotes of this module
             ReleaseNotes = @'
+            
+## 1.0.2 - Bug Fixes & API Improvements
+### Fixed
+- Fixed Unicode encoding issues in interactive mode (replaced box-drawing characters with ASCII)
+- Fixed parallel group detection and visual display in interactive menu
+- Fixed API consistency: New-WorkflowStep function now properly exported for module users
+- Synchronized standalone script with module version
+
+### Changed
+- All examples updated to use New-WorkflowStep instead of [WorkflowStep]::new() for better module compatibility
 
 ## 1.0.1 - Project Link fix
 

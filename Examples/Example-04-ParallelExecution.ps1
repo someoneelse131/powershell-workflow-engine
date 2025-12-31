@@ -41,7 +41,7 @@ $workflow = New-Workflow
 # ============================================================================
 # Syntax:
 #   $parallel = $workflow.AddParallelGroup("Group Name")
-#   $parallel.AddStep([WorkflowStep]::new("Step Name", { param($ctx) ... }))
+#   $parallel.AddStep((New-WorkflowStep -Name "Step Name" -Action { param($ctx) ... }))
 #
 # All steps in a parallel group run AT THE SAME TIME
 # This saves time when steps are independent of each other
@@ -69,8 +69,8 @@ Write-Host ""
 
 $buildGroup = $workflow.AddParallelGroup("Build All Services")
 
-# Note: For parallel steps, we use [WorkflowStep]::new() syntax
-$buildGroup.AddStep([WorkflowStep]::new("Build API Service", {
+# Note: For parallel steps, we use New-WorkflowStep function
+$buildGroup.AddStep((New-WorkflowStep -Name "Build API Service" -Action {
     param($ctx)
     Write-Host "  [API] Starting build..."
     Start-Sleep 2  # Simulates 2 seconds of work
@@ -78,7 +78,7 @@ $buildGroup.AddStep([WorkflowStep]::new("Build API Service", {
     $ctx.Set("apiBuildStatus", "success")
 }))
 
-$buildGroup.AddStep([WorkflowStep]::new("Build Web Frontend", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Build Web Frontend" -Action {
     param($ctx)
     Write-Host "  [WEB] Starting build..."
     Start-Sleep 2  # Also 2 seconds
@@ -86,7 +86,7 @@ $buildGroup.AddStep([WorkflowStep]::new("Build Web Frontend", {
     $ctx.Set("webBuildStatus", "success")
 }))
 
-$buildGroup.AddStep([WorkflowStep]::new("Build Mobile App", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Build Mobile App" -Action {
     param($ctx)
     Write-Host "  [MOBILE] Starting build..."
     Start-Sleep 2  # Also 2 seconds
@@ -94,7 +94,7 @@ $buildGroup.AddStep([WorkflowStep]::new("Build Mobile App", {
     $ctx.Set("mobileBuildStatus", "success")
 }))
 
-$buildGroup.AddStep([WorkflowStep]::new("Build Worker Service", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Build Worker Service" -Action {
     param($ctx)
     Write-Host "  [WORKER] Starting build..."
     Start-Sleep 2  # Also 2 seconds
@@ -110,21 +110,21 @@ $buildGroup.AddStep([WorkflowStep]::new("Build Worker Service", {
 # ----------------------------------------------------------------------------
 $downloadGroup = $workflow.AddParallelGroup("Download Dependencies")
 
-$downloadGroup.AddStep([WorkflowStep]::new("Download NPM Packages", {
+$downloadGroup.AddStep((New-WorkflowStep -Name "Download NPM Packages" -Action {
     param($ctx)
     Write-Host "  [NPM] Downloading packages..."
     Start-Sleep 1
     Write-Host "  [NPM] Downloaded 1,247 packages"
 }))
 
-$downloadGroup.AddStep([WorkflowStep]::new("Download NuGet Packages", {
+$downloadGroup.AddStep((New-WorkflowStep -Name "Download NuGet Packages" -Action {
     param($ctx)
     Write-Host "  [NUGET] Downloading packages..."
     Start-Sleep 1
     Write-Host "  [NUGET] Downloaded 89 packages"
 }))
 
-$downloadGroup.AddStep([WorkflowStep]::new("Download Docker Images", {
+$downloadGroup.AddStep((New-WorkflowStep -Name "Download Docker Images" -Action {
     param($ctx)
     Write-Host "  [DOCKER] Pulling images..."
     Start-Sleep 1
@@ -187,7 +187,7 @@ Write-Host ""
 WHAT YOU LEARNED:
 -----------------
 1. $workflow.AddParallelGroup("Name") - Creates a parallel group
-2. $group.AddStep([WorkflowStep]::new("Name", { ... })) - Adds step to group
+2. $group.AddStep((New-WorkflowStep -Name "Name" -Action { ... })) - Adds step to group
 3. All steps in a group run simultaneously
 4. The workflow waits for ALL parallel steps to complete before continuing
 5. Parallel execution can dramatically reduce total workflow time

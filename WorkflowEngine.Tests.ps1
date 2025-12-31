@@ -1,6 +1,4 @@
 #requires -Version 5.1
-using module WorkflowEngine
-
 <#
 .SYNOPSIS
     Comprehensive Test Suite for WorkflowEngine.ps1
@@ -20,10 +18,11 @@ using module WorkflowEngine
 .PARAMETER LogPath
     Optional path to a log file. If not specified, logs to .\TestResults_<timestamp>.log
 #>
-
 param(
     [string]$LogPath
 )
+
+Import-Module WorkflowEngine
 
 #region Logging Infrastructure
 
@@ -336,28 +335,28 @@ function Test-ParallelExecution {
     
     $parallelGroup = $workflow.AddParallelGroup("Parallel Test")
     
-    $step1 = [WorkflowStep]::new("Parallel Step 1", {
+    $step1 = New-WorkflowStep -Name "Parallel Step 1" -Action {
         param($context)
         Start-Sleep -Milliseconds 100
         $context.Set("P1", "completed")
         return "P1"
-    })
+    }
     $parallelGroup.AddStep($step1)
     
-    $step2 = [WorkflowStep]::new("Parallel Step 2", {
+    $step2 = New-WorkflowStep -Name "Parallel Step 2" -Action {
         param($context)
         Start-Sleep -Milliseconds 100
         $context.Set("P2", "completed")
         return "P2"
-    })
+    }
     $parallelGroup.AddStep($step2)
     
-    $step3 = [WorkflowStep]::new("Parallel Step 3", {
+    $step3 = New-WorkflowStep -Name "Parallel Step 3" -Action {
         param($context)
         Start-Sleep -Milliseconds 100
         $context.Set("P3", "completed")
         return "P3"
-    })
+    }
     $parallelGroup.AddStep($step3)
     
     $success = $workflow.Execute()
@@ -375,7 +374,7 @@ function Test-ParallelExecution {
     
     # 5 steps, each takes 2 seconds
     for ($i = 1; $i -le 5; $i++) {
-        $step = [WorkflowStep]::new("Timing Step $i", [scriptblock]::Create(@"
+        $step = New-WorkflowStep -Name "Timing Step $i" -Action ([scriptblock]::Create(@"
             param(`$context)
             Start-Sleep -Seconds 2
             `$context.Set("T$i", "done")
@@ -401,18 +400,18 @@ function Test-ParallelExecution {
     $workflow = New-Workflow -ContinueOnError $false
     $parallelGroup = $workflow.AddParallelGroup("Failure Test")
     
-    $step1 = [WorkflowStep]::new("Success Step", {
+    $step1 = New-WorkflowStep -Name "Success Step" -Action {
         param($context)
         Start-Sleep -Milliseconds 500
         $context.Set("SuccessRan", $true)
         return "OK"
-    })
+    }
     $parallelGroup.AddStep($step1)
     
-    $stepFail = [WorkflowStep]::new("Fail Step", {
+    $stepFail = New-WorkflowStep -Name "Fail Step" -Action {
         param($context)
         throw "Parallel failure"
-    })
+    }
     $stepFail.Retries = 1
     $stepFail.RetryDelay = 0
     $parallelGroup.AddStep($stepFail)
@@ -427,28 +426,28 @@ function Test-ParallelExecution {
     $workflow = New-Workflow -ContinueOnError $true
     $parallelGroup = $workflow.AddParallelGroup("Continue Test")
     
-    $step1 = [WorkflowStep]::new("Success Step A", {
+    $step1 = New-WorkflowStep -Name "Success Step A" -Action {
         param($context)
         Start-Sleep -Milliseconds 100
         $context.Set("SuccessA", $true)
         return "OK"
-    })
+    }
     $parallelGroup.AddStep($step1)
     
-    $stepFail = [WorkflowStep]::new("Fail Step", {
+    $stepFail = New-WorkflowStep -Name "Fail Step" -Action {
         param($context)
         throw "Parallel failure"
-    })
+    }
     $stepFail.Retries = 1
     $stepFail.RetryDelay = 0
     $parallelGroup.AddStep($stepFail)
     
-    $step2 = [WorkflowStep]::new("Success Step B", {
+    $step2 = New-WorkflowStep -Name "Success Step B" -Action {
         param($context)
         Start-Sleep -Milliseconds 100
         $context.Set("SuccessB", $true)
         return "OK"
-    })
+    }
     $parallelGroup.AddStep($step2)
     
     $workflow.AddStep("After Parallel", {
@@ -588,21 +587,22 @@ function Test-ConditionalSteps {
     
     $parallelGroup = $workflow.AddParallelGroup("Conditional Parallel")
     
-    $stepA = [WorkflowStep]::new("Feature A", {
+    $stepA = New-WorkflowStep -Name "Feature A" -Action {
         param($context)
         $context.Set("FeatureARan", $true)
         return "A"
-    })
-    $stepA.Type = [StepType]::Conditional
+    }
+    # Use workflow's AddConditionalStep pattern to set type properly, or set via string
+    $stepA.Type = 2  # 2 = Conditional in the StepType enum
     $stepA.Condition = { param($ctx) $ctx.Get("EnableFeatureA") -eq $true }
     $parallelGroup.AddStep($stepA)
     
-    $stepB = [WorkflowStep]::new("Feature B", {
+    $stepB = New-WorkflowStep -Name "Feature B" -Action {
         param($context)
         $context.Set("FeatureBRan", $true)
         return "B"
-    })
-    $stepB.Type = [StepType]::Conditional
+    }
+    $stepB.Type = 2  # 2 = Conditional in the StepType enum
     $stepB.Condition = { param($ctx) $ctx.Get("EnableFeatureB") -eq $true }
     $parallelGroup.AddStep($stepB)
     
@@ -681,40 +681,40 @@ function Test-Dependencies {
     # First parallel group - extract
     $extractGroup = $workflow.AddParallelGroup("Extract")
     
-    $extractDB1 = [WorkflowStep]::new("Extract DB1", {
+    $extractDB1 = New-WorkflowStep -Name "Extract DB1" -Action {
         param($context)
         Start-Sleep -Milliseconds 100
         $context.Set("DB1_Data", 100)
         return 100
-    })
+    }
     $extractGroup.AddStep($extractDB1)
     
-    $extractDB2 = [WorkflowStep]::new("Extract DB2", {
+    $extractDB2 = New-WorkflowStep -Name "Extract DB2" -Action {
         param($context)
         Start-Sleep -Milliseconds 100
         $context.Set("DB2_Data", 200)
         return 200
-    })
+    }
     $extractGroup.AddStep($extractDB2)
     
     # Second parallel group - transform (with dependencies)
     $transformGroup = $workflow.AddParallelGroup("Transform")
     
-    $transformDB1 = [WorkflowStep]::new("Transform DB1", {
+    $transformDB1 = New-WorkflowStep -Name "Transform DB1" -Action {
         param($context)
         $data = $context.Get("DB1_Data")
         $context.Set("DB1_Transformed", $data * 2)
         return $data * 2
-    })
+    }
     $transformDB1.DependsOn = @($extractDB1.Id)
     $transformGroup.AddStep($transformDB1)
     
-    $transformDB2 = [WorkflowStep]::new("Transform DB2", {
+    $transformDB2 = New-WorkflowStep -Name "Transform DB2" -Action {
         param($context)
         $data = $context.Get("DB2_Data")
         $context.Set("DB2_Transformed", $data * 2)
         return $data * 2
-    })
+    }
     $transformDB2.DependsOn = @($extractDB2.Id)
     $transformGroup.AddStep($transformDB2)
     
@@ -859,7 +859,7 @@ function Test-Retries {
     $workflow = New-Workflow
     $parallelGroup = $workflow.AddParallelGroup("Retry Test")
     
-    $flakyParallel = [WorkflowStep]::new("Flaky Parallel", [scriptblock]::Create(@"
+    $flakyParallel = New-WorkflowStep -Name "Flaky Parallel" -Action ([scriptblock]::Create(@"
         param(`$context)
         `$script:ParallelRetryCount++
         if (`$script:ParallelRetryCount -lt 2) {
@@ -928,7 +928,7 @@ function Test-Context {
     $parallelGroup = $workflow.AddParallelGroup("Context Merge Test")
     
     for ($i = 1; $i -le 5; $i++) {
-        $step = [WorkflowStep]::new("Set Value $i", [scriptblock]::Create(@"
+        $step = New-WorkflowStep -Name "Set Value $i" -Action ([scriptblock]::Create(@"
             param(`$context)
             Start-Sleep -Milliseconds 100
             `$context.Set("Value$i", $($i * 10))
@@ -1024,7 +1024,7 @@ function Test-MixedWorkflows {
     $parallelGroup = $workflow.AddParallelGroup("Process")
     
     for ($i = 1; $i -le 3; $i++) {
-        $step = [WorkflowStep]::new("Process $i", [scriptblock]::Create(@"
+        $step = New-WorkflowStep -Name "Process $i" -Action ([scriptblock]::Create(@"
             param(`$context)
             Start-Sleep -Milliseconds 100
             `$context.Set("Processed$i", `$true)
@@ -1056,8 +1056,8 @@ function Test-MixedWorkflows {
     $workflow = New-Workflow
     
     $group1 = $workflow.AddParallelGroup("Group 1")
-    $step1a = [WorkflowStep]::new("1A", { param($c) $c.Set("G1A", $true); return $true })
-    $step1b = [WorkflowStep]::new("1B", { param($c) $c.Set("G1B", $true); return $true })
+    $step1a = New-WorkflowStep -Name "1A" -Action { param($c) $c.Set("G1A", $true); return $true }
+    $step1b = New-WorkflowStep -Name "1B" -Action { param($c) $c.Set("G1B", $true); return $true }
     $group1.AddStep($step1a)
     $group1.AddStep($step1b)
     
@@ -1068,8 +1068,8 @@ function Test-MixedWorkflows {
     })
     
     $group2 = $workflow.AddParallelGroup("Group 2")
-    $step2a = [WorkflowStep]::new("2A", { param($c) $c.Set("G2A", $true); return $true })
-    $step2b = [WorkflowStep]::new("2B", { param($c) $c.Set("G2B", $true); return $true })
+    $step2a = New-WorkflowStep -Name "2A" -Action { param($c) $c.Set("G2A", $true); return $true }
+    $step2b = New-WorkflowStep -Name "2B" -Action { param($c) $c.Set("G2B", $true); return $true }
     $group2.AddStep($step2a)
     $group2.AddStep($step2b)
     
@@ -1093,7 +1093,7 @@ function Test-MixedWorkflows {
     $extractSteps = @{}
     
     foreach ($src in $sources) {
-        $step = [WorkflowStep]::new("Extract $src", [scriptblock]::Create(@"
+        $step = New-WorkflowStep -Name "Extract $src" -Action ([scriptblock]::Create(@"
             param(`$context)
             Start-Sleep -Milliseconds 50
             `$context.Set("${src}_Raw", 100)
@@ -1120,7 +1120,7 @@ function Test-MixedWorkflows {
     $targets = @("DW", "Cache", "Archive")
     
     foreach ($tgt in $targets) {
-        $step = [WorkflowStep]::new("Load $tgt", [scriptblock]::Create(@"
+        $step = New-WorkflowStep -Name "Load $tgt" -Action ([scriptblock]::Create(@"
             param(`$context)
             Start-Sleep -Milliseconds 50
             `$total = `$context.Get("TransformedTotal")
@@ -1202,12 +1202,12 @@ function Test-EdgeCases {
     $parallelGroup = $workflow.AddParallelGroup("All Skip")
     
     for ($i = 1; $i -le 3; $i++) {
-        $step = [WorkflowStep]::new("Skip Step $i", {
+        $step = New-WorkflowStep -Name "Skip Step $i" -Action {
             param($context)
             $context.Set("ShouldNotRun$i", $true)
             return $true
-        })
-        $step.Type = [StepType]::Conditional
+        }
+        $step.Type = 2  # 2 = Conditional in the StepType enum
         $step.Condition = { param($ctx) $ctx.Get("SkipAll") -ne $true }
         $parallelGroup.AddStep($step)
     }
@@ -1387,7 +1387,7 @@ function Test-Stress {
     $parallelGroup = $workflow.AddParallelGroup("Large Parallel")
     
     for ($i = 1; $i -le 20; $i++) {
-        $step = [WorkflowStep]::new("Parallel $i", [scriptblock]::Create(@"
+        $step = New-WorkflowStep -Name "Parallel $i" -Action ([scriptblock]::Create(@"
             param(`$context)
             Start-Sleep -Milliseconds 500
             `$context.Set("P$i", `$true)
@@ -1490,8 +1490,6 @@ Failed: $($script:TestResults.Failed)
 Result: $(if ($script:TestResults.Failed -eq 0) { 'SUCCESS' } else { 'FAILED' })
 ================================================================================
 "@
-    
-    return ($script:TestResults.Failed -eq 0)
 }
 
 #endregion
@@ -1501,7 +1499,8 @@ Result: $(if ($script:TestResults.Failed -eq 0) { 'SUCCESS' } else { 'FAILED' })
 # Initialize the log file
 Initialize-LogFile
 
-$allPassed = Run-AllTests
+$null = Run-AllTests
+$allPassed = ($script:TestResults.Failed -eq 0)
 
 if ($allPassed) {
     Write-Log 'All tests passed!' -Level Pass

@@ -90,7 +90,7 @@ function New-TestWorkflow {
     
     $buildGroup = $workflow.AddParallelGroup("Parallel Group 1: Build Services")
     
-    $buildGroup.AddStep([WorkflowStep]::new("Step 3: Build API", {
+    $buildGroup.AddStep((New-WorkflowStep -Name "Step 3: Build API" -Action {
         param($ctx)
         Write-Host "  [API] Building API service..."
         Start-Sleep -Milliseconds 500
@@ -99,7 +99,7 @@ function New-TestWorkflow {
         return $true
     }))
     
-    $buildGroup.AddStep([WorkflowStep]::new("Step 4: Build Frontend", {
+    $buildGroup.AddStep((New-WorkflowStep -Name "Step 4: Build Frontend" -Action {
         param($ctx)
         Write-Host "  [WEB] Building frontend..."
         Start-Sleep -Milliseconds 600
@@ -108,7 +108,7 @@ function New-TestWorkflow {
         return $true
     }))
     
-    $buildGroup.AddStep([WorkflowStep]::new("Step 5: Build Worker", {
+    $buildGroup.AddStep((New-WorkflowStep -Name "Step 5: Build Worker" -Action {
         param($ctx)
         Write-Host "  [WORKER] Building worker service..."
         Start-Sleep -Milliseconds 400
@@ -119,12 +119,12 @@ function New-TestWorkflow {
     
     # Optional: Add a failing parallel step
     if ($IncludeFailingParallelStep) {
-        $failParallelStep = [WorkflowStep]::new("Step 5b: Build Mobile (Fails)", {
+        $failParallelStep = New-WorkflowStep -Name "Step 5b: Build Mobile (Fails)" -Action {
             param($ctx)
             Write-Host "  [MOBILE] Building mobile app..."
             Start-Sleep -Milliseconds 200
             throw "Simulated mobile build failure"
-        })
+        }
         $failParallelStep.Retries = 1
         $failParallelStep.RetryDelay = 0
         $buildGroup.AddStep($failParallelStep)
@@ -161,7 +161,7 @@ function New-TestWorkflow {
     
     $testGroup = $workflow.AddParallelGroup("Parallel Group 2: Run Tests")
     
-    $testGroup.AddStep([WorkflowStep]::new("Step 7: Unit Tests", {
+    $testGroup.AddStep((New-WorkflowStep -Name "Step 7: Unit Tests" -Action {
         param($ctx)
         Write-Host "  [UNIT] Running unit tests..."
         Start-Sleep -Milliseconds 400
@@ -171,17 +171,17 @@ function New-TestWorkflow {
     }))
     
     if ($IncludeFailingStep) {
-        $failStep = [WorkflowStep]::new("Step 8: Integration Tests (Fails)", {
+        $failStep = New-WorkflowStep -Name "Step 8: Integration Tests (Fails)" -Action {
             param($ctx)
             Write-Host "  [INTEGRATION] Running integration tests..."
             Start-Sleep -Milliseconds 300
             throw "Simulated integration test failure"
-        })
+        }
         $failStep.Retries = 1
         $failStep.RetryDelay = 0
         $testGroup.AddStep($failStep)
     } else {
-        $testGroup.AddStep([WorkflowStep]::new("Step 8: Integration Tests", {
+        $testGroup.AddStep((New-WorkflowStep -Name "Step 8: Integration Tests" -Action {
             param($ctx)
             Write-Host "  [INTEGRATION] Running integration tests..."
             Start-Sleep -Milliseconds 500

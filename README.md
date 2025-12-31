@@ -746,12 +746,12 @@ $workflow.AddStep("Initialize Pipeline", {
 
 # Parallel builds
 $buildGroup = $workflow.AddParallelGroup("Build Services")
-$buildGroup.AddStep([WorkflowStep]::new("Build API", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Build API" -Action {
     param($ctx)
     # docker build -t myapp-api:latest ./api
     Write-Host "Building API service..."
 }))
-$buildGroup.AddStep([WorkflowStep]::new("Build Frontend", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Build Frontend" -Action {
     param($ctx)
     # npm run build
     Write-Host "Building frontend..."
@@ -801,15 +801,15 @@ $workflow.AddStep("Extract Data", {
 
 # Transform (parallel processing)
 $transformGroup = $workflow.AddParallelGroup("Transform Data")
-$transformGroup.AddStep([WorkflowStep]::new("Clean Data", {
+$transformGroup.AddStep((New-WorkflowStep -Name "Clean Data" -Action {
     param($ctx)
     Write-Host "Cleaning data..."
 }))
-$transformGroup.AddStep([WorkflowStep]::new("Enrich Data", {
+$transformGroup.AddStep((New-WorkflowStep -Name "Enrich Data" -Action {
     param($ctx)
     Write-Host "Enriching data..."
 }))
-$transformGroup.AddStep([WorkflowStep]::new("Validate Data", {
+$transformGroup.AddStep((New-WorkflowStep -Name "Validate Data" -Action {
     param($ctx)
     Write-Host "Validating data..."
 }))
@@ -844,7 +844,7 @@ $workflow.AddStep("Create Backup", {
 # Parallel maintenance
 $maintenanceGroup = $workflow.AddParallelGroup("Update Servers")
 foreach ($server in $servers) {
-    $maintenanceGroup.AddStep([WorkflowStep]::new("Update $server", {
+    $maintenanceGroup.AddStep((New-WorkflowStep -Name "Update $server" -Action {
         param($ctx)
         # Invoke-Command -ComputerName $using:server -ScriptBlock { ... }
         Write-Host "Updating $server..."
@@ -932,7 +932,7 @@ $workflow.Context.Set("myValue", 123)  # Before parallel group
 
 **Solution:** Include the function definition inside the parallel step scriptblock:
 ```powershell
-$step = [WorkflowStep]::new("Task", {
+$step = New-WorkflowStep -Name "Task" -Action {
     param($ctx)
 
     function MyHelper {
@@ -941,7 +941,7 @@ $step = [WorkflowStep]::new("Task", {
     }
 
     $result = MyHelper -x 5
-})
+}
 ```
 
 **Issue:** Step times out even though it should complete quickly

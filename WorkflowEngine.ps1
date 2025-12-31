@@ -710,14 +710,23 @@ class WfeWorkflow {
 
     hidden [array] BuildStepList() {
         $stepList = @()
+        $parallelGroupIndex = 0
 
         foreach ($item in $this.Steps) {
             if ($item.GetType().Name -eq 'ParallelGroup') {
-                # Add parallel group steps
+                $parallelGroupIndex++
+                $stepIndexInGroup = 0
+                $totalInGroup = $item.Steps.Count
+                
                 foreach ($parallelStep in $item.Steps) {
+                    $stepIndexInGroup++
                     $stepList += @{
                         OriginalStep = $parallelStep
                         ParallelGroup = $item
+                        ParallelGroupName = $item.Name
+                        ParallelGroupIndex = $parallelGroupIndex
+                        StepIndexInGroup = $stepIndexInGroup
+                        TotalStepsInGroup = $totalInGroup
                         Name = $parallelStep.Name
                         Status = $parallelStep.Status
                         IsParallel = $true
@@ -725,10 +734,13 @@ class WfeWorkflow {
                     }
                 }
             } else {
-                # Regular sequential step
                 $stepList += @{
                     OriginalStep = $item
                     ParallelGroup = $null
+                    ParallelGroupName = $null
+                    ParallelGroupIndex = 0
+                    StepIndexInGroup = 0
+                    TotalStepsInGroup = 0
                     Name = $item.Name
                     Status = $item.Status
                     IsParallel = $false
@@ -813,11 +825,11 @@ class WfeWorkflow {
         Write-Host "========================================" -ForegroundColor Cyan
         Write-Host ""
 
-        # Build flat list of all steps with indices
         $stepList = $this.BuildStepList()
 
-        # Display steps
         $index = 1
+        $currentParallelGroupIndex = 0
+        
         foreach ($item in $stepList) {
             $status = $item.Status
             $color = switch ($status) {
@@ -828,17 +840,41 @@ class WfeWorkflow {
                 default { "White" }
             }
 
+            # Display parallel group header when entering a new group
+            if ($item.IsParallel -and $item.ParallelGroupIndex -ne $currentParallelGroupIndex) {
+                $currentParallelGroupIndex = $item.ParallelGroupIndex
+                Write-Host ""
+                Write-Host ("  +-- PARALLEL GROUP: " + $item.ParallelGroupName + " ") -ForegroundColor Magenta -NoNewline
+                Write-Host ("(" + $item.TotalStepsInGroup + " steps run together)") -ForegroundColor DarkMagenta
+            }
+
             $prefix = "[$index]"
-            $type = if ($item.IsParallel) { "[PARALLEL]" } else { "[SEQUENTIAL]" }
             $statusText = "[$status]"
 
-            Write-Host "$prefix $type " -NoNewline
-            Write-Host $item.Name -ForegroundColor $color -NoNewline
-            Write-Host " $statusText" -ForegroundColor $color
+            if ($item.IsParallel) {
+                # Parallel step with tree-style indicator
+                $isLast = ($item.StepIndexInGroup -eq $item.TotalStepsInGroup)
+                $treeChar = if ($isLast) { "  +--" } else { "  |--" }
+                
+                Write-Host "$treeChar $prefix " -ForegroundColor DarkGray -NoNewline
+                Write-Host $item.Name -ForegroundColor $color -NoNewline
+                Write-Host " $statusText" -ForegroundColor $color
+                
+                # Close the group visually after the last item
+                if ($isLast) {
+                    $currentParallelGroupIndex = 0
+                    Write-Host ""
+                }
+            } else {
+                # Sequential step
+                Write-Host "$prefix [SEQUENTIAL] " -NoNewline
+                Write-Host $item.Name -ForegroundColor $color -NoNewline
+                Write-Host " $statusText" -ForegroundColor $color
+            }
 
-            # Show description if available
             if ($item.Description) {
-                Write-Host "      $($item.Description)" -ForegroundColor Gray
+                $indent = if ($item.IsParallel) { "        " } else { "      " }
+                Write-Host "$indent$($item.Description)" -ForegroundColor Gray
             }
 
             $index++
@@ -854,6 +890,8 @@ class WfeWorkflow {
         Write-Host "  - All steps (e.g., all)" -ForegroundColor Gray
         Write-Host "  - Exit (e.g., exit or quit)" -ForegroundColor Gray
         Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "NOTE: Steps within a parallel group will execute" -ForegroundColor DarkGray
+        Write-Host "      simultaneously when multiple are selected." -ForegroundColor DarkGray
         Write-Host ""
 
         $userInput = Read-Host "Select steps to execute"

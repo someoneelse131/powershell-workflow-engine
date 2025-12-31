@@ -174,7 +174,7 @@ $workflow.AddConditionalStep(
 
 $buildGroup = $workflow.AddParallelGroup("Build Application")
 
-$buildGroup.AddStep([WorkflowStep]::new("Build Docker Image", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Build Docker Image" -Action {
     param($ctx)
     Write-Host "  [DOCKER] Building image..."
     Start-Sleep 2
@@ -182,14 +182,14 @@ $buildGroup.AddStep([WorkflowStep]::new("Build Docker Image", {
     $ctx.Set("dockerImage", "myapp:latest")
 }))
 
-$buildGroup.AddStep([WorkflowStep]::new("Compile Static Assets", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Compile Static Assets" -Action {
     param($ctx)
     Write-Host "  [ASSETS] Compiling CSS/JS..."
     Start-Sleep 1
     Write-Host "  [ASSETS] Minified 24 files"
 }))
 
-$buildGroup.AddStep([WorkflowStep]::new("Generate Documentation", {
+$buildGroup.AddStep((New-WorkflowStep -Name "Generate Documentation" -Action {
     param($ctx)
     Write-Host "  [DOCS] Generating API documentation..."
     Start-Sleep 1
